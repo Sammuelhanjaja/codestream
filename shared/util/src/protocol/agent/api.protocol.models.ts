@@ -483,6 +483,8 @@ export interface CSCompany extends CSEntity {
 	isNRConnected?: boolean;
 	host?: EnvironmentHost;
 	codestreamOnly?: boolean;
+	orgOrigination?: string;
+	linkedNROrgId?: string;
 }
 
 export interface CSTeam extends CSEntity {
