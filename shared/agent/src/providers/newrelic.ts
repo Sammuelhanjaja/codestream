@@ -583,7 +583,8 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 				(_: { guid: string; name: string; account: { name: string } }) => {
 					return {
 						guid: _.guid,
-						name: `${_.name} (${_.account.name})`,
+						name: _.name,
+						account: _.account.name,
 					};
 				}
 			);
