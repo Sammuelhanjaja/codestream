@@ -482,6 +482,7 @@ export interface CSCompany extends CSEntity {
 	nrAccountIds?: number[];
 	isNRConnected?: boolean;
 	host?: EnvironmentHost;
+	codestreamOnly?: boolean;
 }
 
 export interface CSTeam extends CSEntity {

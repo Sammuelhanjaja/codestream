@@ -264,8 +264,7 @@ export const BaseCodeErrorHeader = (props: PropsWithChildren<BaseCodeErrorHeader
 		const user = state.users[state.session.userId!];
 		const teamId = state.context.currentTeamId;
 		const team = state.teams[teamId];
-		const eligibleJoinCompanies = user?.eligibleJoinCompanies;
-		const eligibleCompany = eligibleJoinCompanies?.find(_ => team.companyId === _.id);
+		const company = state.companies[team.companyId];
 		return {
 			isConnectedToNewRelic: isConnected(state, { id: "newrelic*com" }),
 			codeErrorCreator: getCodeErrorCreator(state),
@@ -274,7 +273,7 @@ export const BaseCodeErrorHeader = (props: PropsWithChildren<BaseCodeErrorHeader
 			teamMembers: getTeamMembers(state),
 			emailAddress: state.session.userId ? state.users[state.session.userId]?.email : "",
 			hideCodeErrorInstructions: state.preferences.hideCodeErrorInstructions,
-			isNonCsOrg: true, //@TODO when available, use eligibleCompany.isNonCsOrg
+			isNonCsOrg: !company.codestreamOnly,
 		};
 	});
 
