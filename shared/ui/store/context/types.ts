@@ -142,6 +142,7 @@ export enum Route {
 	NewUser = "newUserEntry",
 	Signup = "signup",
 	Login = "login",
+	OldLogin = "oldLogin", // TODO: remove this when New Relic login is fully supported
 	ProviderAuth = "providerAuth",
 	NewRelicSignup = "newRelicSignup",
 	JoinTeam = "joinTeam",

@@ -336,6 +336,10 @@ export const goToSignup = (params = {}) =>
 export const goToLogin = (params = {}) =>
 	action(ContextActionsType.SetRoute, { name: Route.Login, params });
 
+// TODO: remove this when New Relic login is fully supported
+export const goToOldLogin = (params = {}) =>
+	action(ContextActionsType.SetRoute, { name: Route.OldLogin, params });
+
 export const goToJoinTeam = (params = {}) =>
 	action(ContextActionsType.SetRoute, { name: Route.JoinTeam, params });
 
