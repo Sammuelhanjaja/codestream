@@ -22,7 +22,7 @@ import {
 	isNRErrorResponse,
 } from "@codestream/protocols/agent";
 import cx from "classnames";
-import { head as _head, isEmpty, isEmpty as _isEmpty, isNil as _isNil } from "lodash-es";
+import { head as _head, isEmpty as _isEmpty, isNil as _isNil } from "lodash-es";
 import React, { useEffect, useState } from "react";
 import { shallowEqual } from "react-redux";
 import styled from "styled-components";
@@ -522,16 +522,9 @@ export const Observability = React.memo((props: Props) => {
 				telemetryStateValue = "Services";
 			}
 
-			// "Not Connected" - not connected to NR, this goes away with UID completion
-			if (!derivedState.newRelicIsConnected) {
-				telemetryStateValue = "Not Connected";
-			}
-
-			if (!isEmpty(telemetryStateValue)) {
-				HostApi.instance.track("O11y Rendered", {
-					State: telemetryStateValue,
-				});
-			}
+			HostApi.instance.track("O11y Rendered", {
+				State: telemetryStateValue || "N/A",
+			});
 
 			if (expandedEntity) {
 				callServiceClickedTelemetry();
