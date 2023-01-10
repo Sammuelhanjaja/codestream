@@ -1305,7 +1305,7 @@ export interface GetObservabilityEntitiesRequest {
 
 export interface GetObservabilityEntitiesResponse {
 	totalResults: number;
-	entities: { guid: string; name: string; account: string }[];
+	entities: { guid: string; name: string; account: string; entityType: EntityType }[];
 	nextCursor?: string;
 }
 

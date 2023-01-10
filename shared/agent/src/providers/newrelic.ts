@@ -570,6 +570,7 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 					  entities {
 						guid
 						name
+						entityType
 						account {
 							name
 						  }
@@ -583,11 +584,12 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 				cursor: request.nextCursor ?? null,
 			});
 			const entities = response.actor.entitySearch.results.entities.map(
-				(_: { guid: string; name: string; account: { name: string } }) => {
+				(_: { guid: string; name: string; account: { name: string }; entityType: EntityType }) => {
 					return {
 						guid: _.guid,
 						name: _.name,
 						account: _.account.name,
+						entityType: _.entityType,
 					};
 				}
 			);
