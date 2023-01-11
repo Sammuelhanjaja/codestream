@@ -102,7 +102,6 @@ import { updatePreferences } from "./store/preferences/actions";
 import { handleDirectives } from "./store/providerPullRequests/slice";
 import { openPullRequestByUrl } from "./store/providerPullRequests/thunks";
 import { configureProvider, updateProviders } from "./store/providers/actions";
-import { isConnected } from "./store/providers/reducer";
 import { getReview } from "./store/reviews/reducer";
 import { setMaintenanceMode } from "./store/session/actions";
 import { updateUnreads } from "./store/unreads/actions";
@@ -610,9 +609,6 @@ function listenForEvents(store) {
 								sessionStart: state.context.sessionStart,
 								pendingEntityId: definedQuery.query.entityId,
 								pendingErrorGroupGuid: definedQuery.query.errorGroupGuid,
-								pendingRequiresConnection: !isConnected(state, {
-									id: "newrelic*com",
-								}),
 								openType: "Open in IDE Flow",
 								environment: definedQuery.query.env,
 							})
