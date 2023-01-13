@@ -1567,14 +1567,10 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 		try {
 			const userId = (await this.getUserId()) || undefined;
 
-			console.warn("eric userId", userId);
-
 			const response = await this.setFullNameMutation({
 				userId,
 				newFullName: request.fullName!,
 			});
-
-			console.warn("eric response", response);
 
 			return { fullName: response.name };
 		} catch (ex) {
