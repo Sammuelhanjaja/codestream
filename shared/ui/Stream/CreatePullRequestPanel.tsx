@@ -2,7 +2,6 @@ import { configureAndConnectProvider } from "@codestream/webview/store/providers
 import cx from "classnames";
 import React, { MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 
 import {
@@ -37,7 +36,6 @@ import { PanelHeader } from "../src/components/PanelHeader";
 import { CodeStreamState } from "../store";
 import {
 	closeAllPanels,
-	openPanel,
 	setCurrentPullRequest,
 	setCurrentRepo,
 	setCurrentReview,
@@ -144,6 +142,7 @@ export const CreatePullRequestPanel = (props: { closePanel: MouseEventHandler<El
 			"github/enterprise",
 			"gitlab*com",
 			"gitlab/enterprise",
+			"bitbucket*org",
 		];
 		const codeHostProviders = Object.keys(providers).filter(id =>
 			[

@@ -128,6 +128,18 @@ const PR_QUERIES: PRProviderQueries = {
 			query: `is:pr is:open assignee:@me -author:@me`,
 		},
 	],
+	// "bitbucket*org": [
+	// 	{
+	// 		providerId: "bitbucket*org",
+	// 		name: "is waiting on your review",
+	// 		query: `is:pr is:open review-requested:@me -author:@me`, //TODO: fix for bitbucket
+	// 	},
+	// 	{
+	// 		providerId: "bitbucket*org",
+	// 		name: "was assigned to you",
+	// 		query: `is:pr is:open assignee:@me -author:@me`, //TODO: fix for bitbucket
+	// 	},
+	// ],
 };
 
 interface ProviderPullRequests {
@@ -170,7 +182,8 @@ export class ThirdPartyProviderRegistry {
 					name === "github" ||
 					name === "github_enterprise" ||
 					name === "gitlab" ||
-					name === "gitlab_enterprise"
+					name === "gitlab_enterprise" ||
+					name === "bitbucket"
 				);
 			}
 		);
