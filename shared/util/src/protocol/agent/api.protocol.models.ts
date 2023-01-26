@@ -697,6 +697,7 @@ export interface CSUser extends CSEntity {
 	firstSessionStartedAt?: number;
 	hasGitLens?: boolean;
 	countryCode?: string;
+	nrUserId?: number;
 }
 
 export interface CSLastReads {
@@ -845,6 +846,9 @@ type CSMeProviderInfo = {
 		[key: string]: CSProviderInfos | undefined;
 	};
 };
+export interface CSNRUserInfo {
+	userTier?: string;
+}
 
 export interface CSMe extends CSUser {
 	lastReads: CSLastReads;
@@ -855,6 +859,7 @@ export interface CSMe extends CSUser {
 	providerInfo?: CSMeProviderInfo;
 	mustSetPassword?: boolean;
 	inMaintenanceMode?: boolean;
+	nrUserInfo?: CSNRUserInfo;
 }
 
 export interface CSApiCapability {
