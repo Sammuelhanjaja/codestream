@@ -58,12 +58,16 @@ import {
 	PRStatusMessage,
 	PRSubmitReviewButton,
 	PRTitle,
+	PRIAmRequested,
 } from "../../PullRequestComponents";
 import Tooltip from "../../Tooltip";
 import { PullRequestFileComments } from "../../PullRequestFileComments";
 import Timestamp from "../../Timestamp";
 import { setUserPreference } from "../../actions";
 import { PullRequestFinishReview } from "../../PullRequestFinishReview";
+import ScrollBox from "../../ScrollBox";
+import { PullRequestFilesChangedTab } from "../../PullRequestFilesChangedTab";
+import { PullRequestCommitsTab } from "../../PullRequestCommitsTab";
 
 const Root = styled.div`
 	@media only screen and (max-width: ${props => props.theme.breakpoint}) {
@@ -683,23 +687,23 @@ export const PullRequest = () => {
 					<CreateCodemarkIcons narrow onebutton />
 					{isLoadingMessage && <FloatingLoadingMessage>{isLoadingMessage}</FloatingLoadingMessage>}
 					<PRHeader>
-						{/* {iAmRequested && activeTab == 1 && (
-							<PRIAmRequested>
-								<div>
-									<b>{(pr.author || GHOST).login}</b> requested your review
-									<span className="wide-text"> on this pull request</span>.
-								</div>
-								<Button
-									variant="success"
-									size="compact"
-									onClick={() => {
-										switchActiveTab(4);
-									}}
-								>
-									Add <span className="wide-text">your</span> review
-								</Button>
-							</PRIAmRequested>
-						)} */}
+						{/* {iAmRequested && activeTab == 1 && ( */}
+						<PRIAmRequested>
+							<div>
+								<b>{(pr.author || GHOST).login}</b> requested your review
+								<span className="wide-text"> on this pull request</span>.
+							</div>
+							<Button
+								variant="success"
+								size="compact"
+								onClick={() => {
+									switchActiveTab(4);
+								}}
+							>
+								Add <span className="wide-text">your</span> review
+							</Button>
+						</PRIAmRequested>
+						{/* )} */}
 						<PRTitle className={editingTitle ? "editing" : ""}>
 							{editingTitle ? (
 								<PREditTitle>
@@ -963,14 +967,14 @@ export const PullRequest = () => {
 							)}
 						</Tabs>
 					</PRHeader>
-					{/*{!derivedState.composeCodemarkActive && (
+					{!derivedState.composeCodemarkActive && (
 						<ScrollBox>
 							<div
 								className="channel-list vscroll"
 								id="pr-scroll-container"
 								style={{ paddingTop: "10px" }}
 							>
-								{activeTab === 1 && (
+								{/* {activeTab === 1 && (
 									<PullRequestConversationTab
 										ghRepo={ghRepo}
 										autoCheckedMergeability={autoCheckedMergeability}
@@ -978,7 +982,7 @@ export const PullRequest = () => {
 										setIsLoadingMessage={setIsLoadingMessage}
 										initialScrollPosition={scrollPosition[1]}
 									/>
-								)}
+								)} */}
 								{activeTab === 2 && (
 									<PullRequestCommitsTab
 										pr={pr}
@@ -998,7 +1002,7 @@ export const PullRequest = () => {
 								)}
 							</div>
 						</ScrollBox>
-					)} */}
+					)}
 
 					{/* {!derivedState.composeCodemarkActive && derivedState.currentPullRequestCommentId && (
 						<PullRequestFileComments

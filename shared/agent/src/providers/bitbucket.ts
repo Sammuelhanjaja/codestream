@@ -1050,6 +1050,11 @@ export class BitbucketProvider
 				url: commit.links.html,
 			} as FetchThirdPartyPullRequestCommitsResponse;
 		});
+		console.log(
+			"****************** getPullRequestCommits response: ",
+			response,
+			"**************************"
+		);
 		return response;
 	}
 
