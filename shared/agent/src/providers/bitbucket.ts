@@ -802,6 +802,13 @@ export class BitbucketProvider
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/activity`
 			);
 
+			const commits = await this.get<BitbucketValues<BitbucketPullRequestCommit[]>>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/commits`
+			);
+
+			const commit_count = commits.body.values.length;
+			// console.log("**********************commit_count = ", commit_count, "****************************")
+
 			const userResponse = await this.getCurrentUser();
 
 			const listToTree: any = (
@@ -895,6 +902,7 @@ export class BitbucketProvider
 							repoWithOwner: repoWithOwner,
 						}),
 						providerId: this.providerConfig.id,
+						commits: commit_count,
 						repository: {
 							name: repoWithOwnerSplit[1],
 							nameWithOwner: repoWithOwner,

@@ -912,7 +912,7 @@ export const PullRequest = () => {
 							<Tab onClick={e => switchActiveTab(2)} active={activeTab == 2}>
 								<Icon name="git-commit" />
 								<span className="wide-text">Commits</span>
-								{/* <PRBadge>{pr.commits.totalCount}</PRBadge> */}
+								<PRBadge>{pr.commits}</PRBadge>
 							</Tab>
 							<Tab onClick={e => switchActiveTab(3)} active={activeTab == 3}>
 								<Icon name="check" />
