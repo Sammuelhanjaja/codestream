@@ -13,6 +13,14 @@ import styled, { ThemeProvider } from "styled-components";
 import { logError } from "../../../logger";
 import { LoadingMessage } from "../../../src/components/LoadingMessage";
 import { CodeStreamState } from "../../../store";
+import { Button } from "../../../src/components/Button";
+import { FloatingLoadingMessage } from "@codestream/webview/src/components/FloatingLoadingMessage";
+import Icon from "../../Icon";
+import { Link } from "../../Link";
+import { Tab, Tabs } from "../../../src/components/Tabs";
+import copy from "copy-to-clipboard";
+import { GHOST } from "../../PullRequestTimelineItems";
+import { InlineMenu } from "../../../src/components/controls/InlineMenu";
 import {
 	clearCurrentPullRequest,
 	setCurrentPullRequest,
@@ -36,9 +44,26 @@ import { useAppDispatch, useAppSelector, useDidMount } from "../../../utilities/
 import { HostApi } from "../../../webview-api";
 import { confirmPopup } from "../../Confirm";
 import { CreateCodemarkIcons } from "../../CreateCodemarkIcons";
-
-
+import {
+	PRAction,
+	PRActionButtons,
+	PRAuthor,
+	PRBadge,
+	PRBranch,
+	PREditTitle,
+	PRHeader,
+	PRPlusMinus,
+	PRStatus,
+	PRStatusButton,
+	PRStatusMessage,
+	PRSubmitReviewButton,
+	PRTitle,
+} from "../../PullRequestComponents";
+import Tooltip from "../../Tooltip";
 import { PullRequestFileComments } from "../../PullRequestFileComments";
+import Timestamp from "../../Timestamp";
+import { setUserPreference } from "../../actions";
+import { PullRequestFinishReview } from "../../PullRequestFinishReview";
 
 const Root = styled.div`
 	@media only screen and (max-width: ${props => props.theme.breakpoint}) {
@@ -517,79 +542,79 @@ export const PullRequest = () => {
 
 	let interval;
 	let intervalCounter = 0;
-	useEffect(() => {
-		interval && clearInterval(interval);
-		if (!derivedState.currentPullRequest) return;
+	// useEffect(() => {
+	// 	interval && clearInterval(interval);
+	// 	if (!derivedState.currentPullRequest) return;
 
-		if (
-			autoCheckedMergeability === "UNCHECKED" ||
-			(derivedState.currentPullRequest.conversations &&
-				derivedState.currentPullRequest.conversations.repository &&
-				derivedState.currentPullRequest.conversations.repository.pullRequest &&
-				derivedState.currentPullRequest.conversations.repository.pullRequest.mergeable ===
-					"UNKNOWN")
-		) {
-			console.log("PullRequest pr mergeable is UNKNOWN");
-			setTimeout(() => {
-				_checkMergeabilityStatus().then(_ => {
-					setAutoCheckedMergeability(_ ? "CHECKED" : "UNKNOWN");
-				});
-			}, 8000);
-		}
-		interval = setInterval(async () => {
-			// checks for 15 min
-			if (intervalCounter >= 3) {
-				interval && clearInterval(interval);
-				intervalCounter = 0;
-				console.warn(`stopped getPullRequestLastUpdated interval counter=${intervalCounter}`);
-				return;
-			}
-			try {
-				const response = await dispatch(
-					api({
-						method: "getPullRequestLastUpdated",
-						params: {},
-						options: { preventClearError: true, preventErrorReporting: true },
-					})
-				).unwrap();
-				if (
-					derivedState.currentPullRequest &&
-					response &&
-					response.updatedAt &&
-					derivedState.currentPullRequestLastUpdated &&
-					// if more than 5 seconds "off""
-					(Date.parse(response.updatedAt) -
-						Date.parse(derivedState.currentPullRequestLastUpdated)) /
-						1000 >
-						5
-				) {
-					console.warn(
-						"getPullRequestLastUpdated is updating",
-						response.updatedAt,
-						derivedState.currentPullRequestLastUpdated,
-						intervalCounter
-					);
-					intervalCounter = 0;
-					reload();
-					clearInterval(interval);
-				} else {
-					intervalCounter++;
-					console.log("incrementing counter", intervalCounter);
-				}
-			} catch (ex) {
-				console.error(ex);
-				interval && clearInterval(interval);
-			}
-		}, 300000); //300000 === 5 minute interval
+	// 	if (
+	// 		autoCheckedMergeability === "UNCHECKED" ||
+	// 		(derivedState.currentPullRequest.conversations &&
+	// 			derivedState.currentPullRequest.conversations.repository &&
+	// 			derivedState.currentPullRequest.conversations.repository.pullRequest &&
+	// 			derivedState.currentPullRequest.conversations.repository.pullRequest.mergeable ===
+	// 				"UNKNOWN")
+	// 	) {
+	// 		console.log("PullRequest pr mergeable is UNKNOWN");
+	// 		setTimeout(() => {
+	// 			_checkMergeabilityStatus().then(_ => {
+	// 				setAutoCheckedMergeability(_ ? "CHECKED" : "UNKNOWN");
+	// 			});
+	// 		}, 8000);
+	// 	}
+	// 	interval = setInterval(async () => {
+	// 		// checks for 15 min
+	// 		if (intervalCounter >= 3) {
+	// 			interval && clearInterval(interval);
+	// 			intervalCounter = 0;
+	// 			console.warn(`stopped getPullRequestLastUpdated interval counter=${intervalCounter}`);
+	// 			return;
+	// 		}
+	// 		try {
+	// 			const response = await dispatch(
+	// 				api({
+	// 					method: "getPullRequestLastUpdated",
+	// 					params: {},
+	// 					options: { preventClearError: true, preventErrorReporting: true },
+	// 				})
+	// 			).unwrap();
+	// 			if (
+	// 				derivedState.currentPullRequest &&
+	// 				response &&
+	// 				response.updatedAt &&
+	// 				derivedState.currentPullRequestLastUpdated &&
+	// 				// if more than 5 seconds "off""
+	// 				(Date.parse(response.updatedAt) -
+	// 					Date.parse(derivedState.currentPullRequestLastUpdated)) /
+	// 					1000 >
+	// 					5
+	// 			) {
+	// 				console.warn(
+	// 					"getPullRequestLastUpdated is updating",
+	// 					response.updatedAt,
+	// 					derivedState.currentPullRequestLastUpdated,
+	// 					intervalCounter
+	// 				);
+	// 				intervalCounter = 0;
+	// 				reload();
+	// 				clearInterval(interval);
+	// 			} else {
+	// 				intervalCounter++;
+	// 				console.log("incrementing counter", intervalCounter);
+	// 			}
+	// 		} catch (ex) {
+	// 			console.error(ex);
+	// 			interval && clearInterval(interval);
+	// 		}
+	// 	}, 300000); //300000 === 5 minute interval
 
-		return () => {
-			interval && clearInterval(interval);
-		};
-	}, [
-		derivedState.currentPullRequestLastUpdated,
-		derivedState.currentPullRequest,
-		autoCheckedMergeability,
-	]);
+	// 	return () => {
+	// 		interval && clearInterval(interval);
+	// 	};
+	// }, [
+	// 	derivedState.currentPullRequestLastUpdated,
+	// 	derivedState.currentPullRequest,
+	// 	autoCheckedMergeability,
+	// ]);
 
 	// const iAmRequested = useMemo(() => {
 	// 	if (pr && pr.viewer) {
@@ -655,11 +680,10 @@ export const PullRequest = () => {
 		return (
 			<ThemeProvider theme={addViewPreferencesToTheme}>
 				<Root className="bitbucket">
-					<h1>hello</h1>
-					{/* <CreateCodemarkIcons narrow onebutton /> */}
-					{/* {isLoadingMessage && <FloatingLoadingMessage>{isLoadingMessage}</FloatingLoadingMessage>} */}
-					{/* <PRHeader>
-						{iAmRequested && activeTab == 1 && (
+					<CreateCodemarkIcons narrow onebutton />
+					{isLoadingMessage && <FloatingLoadingMessage>{isLoadingMessage}</FloatingLoadingMessage>}
+					<PRHeader>
+						{/* {iAmRequested && activeTab == 1 && (
 							<PRIAmRequested>
 								<div>
 									<b>{(pr.author || GHOST).login}</b> requested your review
@@ -675,7 +699,7 @@ export const PullRequest = () => {
 									Add <span className="wide-text">your</span> review
 								</Button>
 							</PRIAmRequested>
-						)}
+						)} */}
 						<PRTitle className={editingTitle ? "editing" : ""}>
 							{editingTitle ? (
 								<PREditTitle>
@@ -716,8 +740,8 @@ export const PullRequest = () => {
 									</Tooltip>
 								</>
 							)}
-						</PRTitle> */}
-					{/* <PRStatus>
+						</PRTitle>
+						<PRStatus>
 							<PRStatusButton
 								disabled
 								fullOpacity
@@ -739,7 +763,7 @@ export const PullRequest = () => {
 							<PRStatusMessage>
 								<PRAuthor>{(pr.author || GHOST).login}</PRAuthor>
 								<PRAction>
-									{action} {pr.commits && pr.commits.totalCount} commits into{" "}
+									{/* {action} {pr.commits && pr.commits.totalCount} commits into{" "} */}
 									<Link href={`${pr.repoUrl}/tree/${pr.baseRefName}`}>
 										<PRBranch>
 											{pr.repository && pr.repository.name}:{pr.baseRefName}
@@ -870,8 +894,8 @@ export const PullRequest = () => {
 									/>
 								</span>
 							</PRActionButtons>
-						</PRStatus> */}
-					{/* {derivedState.currentPullRequest &&
+						</PRStatus>
+						{derivedState.currentPullRequest &&
 							derivedState.currentPullRequest.error &&
 							derivedState.currentPullRequest.error.message && (
 								<PRError>
@@ -883,21 +907,19 @@ export const PullRequest = () => {
 							<Tab onClick={e => switchActiveTab(1)} active={activeTab == 1}>
 								<Icon name="comment" />
 								<span className="wide-text">Conversation</span>
-								<PRBadge>{numComments}</PRBadge>
+								{/* <PRBadge>{numComments}</PRBadge> */}
 							</Tab>
 							<Tab onClick={e => switchActiveTab(2)} active={activeTab == 2}>
 								<Icon name="git-commit" />
 								<span className="wide-text">Commits</span>
-								<PRBadge>{pr.commits.totalCount}</PRBadge>
-							</Tab> */}
-					{/*
+								{/* <PRBadge>{pr.commits.totalCount}</PRBadge> */}
+							</Tab>
 							<Tab onClick={e => switchActiveTab(3)} active={activeTab == 3}>
 								<Icon name="check" />
 								<span className="wide-text">Checks</span>
-								<PRBadge>{pr.numChecks}</PRBadge>
+								{/* <PRBadge>{pr.numChecks}</PRBadge> */}
 							</Tab>
-							*/}
-					{/* {pr.pendingReview ? (
+							{pr.pendingReview ? (
 								<PRSubmitReviewButton>
 									<Button variant="success" onClick={() => setFinishReviewOpen(!finishReviewOpen)}>
 										Finish<span className="wide-text"> review</span>
@@ -941,7 +963,7 @@ export const PullRequest = () => {
 							)}
 						</Tabs>
 					</PRHeader>
-					{!derivedState.composeCodemarkActive && (
+					{/*{!derivedState.composeCodemarkActive && (
 						<ScrollBox>
 							<div
 								className="channel-list vscroll"
