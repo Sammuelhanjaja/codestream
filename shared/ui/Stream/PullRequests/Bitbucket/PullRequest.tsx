@@ -162,7 +162,7 @@ export const PullRequest = () => {
 
 	const [activeTab, setActiveTab] = useState(1);
 	const [scrollPosition, setScrollPosition] = useState(EMPTY_HASH2);
-	const [ghRepo, setGhRepo] = useState<any>(EMPTY_HASH);
+	const [bbRepo, setBbRepo] = useState<any>(EMPTY_HASH);
 	const [isLoadingPR, setIsLoadingPR] = useState(false);
 	const [isLoadingMessage, setIsLoadingMessage] = useState("");
 	const [generalError, setGeneralError] = useState("");
@@ -226,7 +226,7 @@ export const PullRequest = () => {
 	const _assignState = (pr, src?: string) => {
 		if (!pr || !pr.repository) return;
 		console.warn("_assignState src", src);
-		setGhRepo(pr.repository);
+		setBbRepo(pr.repository);
 		setTitle(pr.repository.pullRequest.title);
 		setEditingTitle(false);
 		setSavingTitle(false);
@@ -911,7 +911,7 @@ export const PullRequest = () => {
 							<Tab onClick={e => switchActiveTab(1)} active={activeTab == 1}>
 								<Icon name="comment" />
 								<span className="wide-text">Conversation</span>
-								{/* <PRBadge>{numComments}</PRBadge> */}
+								<PRBadge>{pr.comments?.length}</PRBadge>
 							</Tab>
 							<Tab onClick={e => switchActiveTab(2)} active={activeTab == 2}>
 								<Icon name="git-commit" />
@@ -976,7 +976,7 @@ export const PullRequest = () => {
 							>
 								{/* {activeTab === 1 && (
 									<PullRequestConversationTab
-										ghRepo={ghRepo}
+										bbRepo={bbRepo}
 										autoCheckedMergeability={autoCheckedMergeability}
 										checkMergeabilityStatus={checkMergeabilityStatus}
 										setIsLoadingMessage={setIsLoadingMessage}
@@ -986,7 +986,7 @@ export const PullRequest = () => {
 								{activeTab === 2 && (
 									<PullRequestCommitsTab
 										pr={pr}
-										ghRepo={ghRepo}
+										bbRepo={bbRepo}
 										initialScrollPosition={scrollPosition[2]}
 									/>
 								)}
@@ -1003,8 +1003,7 @@ export const PullRequest = () => {
 							</div>
 						</ScrollBox>
 					)}
-
-					{/* {!derivedState.composeCodemarkActive && derivedState.currentPullRequestCommentId && (
+					{!derivedState.composeCodemarkActive && derivedState.currentPullRequestCommentId && (
 						<PullRequestFileComments
 							pr={pr}
 							setIsLoadingMessage={setIsLoadingMessage}
@@ -1013,7 +1012,7 @@ export const PullRequest = () => {
 							onClose={closeFileComments}
 							prCommitsRange={prCommitsRange}
 						/>
-					)} */}
+					)}
 				</Root>
 			</ThemeProvider>
 		);
