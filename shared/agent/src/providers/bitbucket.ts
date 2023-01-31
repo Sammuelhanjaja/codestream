@@ -277,6 +277,17 @@ interface BitbucketMergeRequest {
 	merge_strategy?: string;
 }
 
+interface BitbucketSubmitReviewRequest {
+	type: string;
+	message?: string;
+	approved?: boolean;
+	state?: string;
+	participated_on?: Date;
+	user?: {
+		username?: string;
+	};
+}
+
 interface BitBucketCreateCommentRequest {
 	content: {
 		raw: string;
@@ -902,7 +913,9 @@ export class BitbucketProvider
 							repoWithOwner: repoWithOwner,
 						}),
 						providerId: this.providerConfig.id,
-						commits: commit_count,
+						commits: {
+							totalCount: commit_count,
+						},
 						repository: {
 							name: repoWithOwnerSplit[1],
 							nameWithOwner: repoWithOwner,
@@ -1051,6 +1064,70 @@ export class BitbucketProvider
 			} as FetchThirdPartyPullRequestCommitsResponse;
 		});
 		return response;
+	}
+
+	//TODO: Fix for bitbucket
+	async submitReview(request: {
+		pullRequestId: string;
+		text: string;
+		eventType: string;
+		// used with old servers
+		pullRequestReviewId?: string;
+	}): Promise<Directives> {
+		if (!request.eventType) {
+			request.eventType = "COMMENT";
+		}
+		if (
+			request.eventType !== "COMMENT" &&
+			request.eventType !== "APPROVE" &&
+			// for some reason I cannot get DISMISS to work...
+			// request.eventType !== "DISMISS" &&
+			request.eventType !== "REQUEST_CHANGES"
+		) {
+			throw new Error("Invalid eventType");
+		}
+		const payload: BitbucketSubmitReviewRequest = {
+			type: request.eventType,
+			message: request.text,
+		};
+		Logger.log(`commenting:pullrequestsubmitreview`, {
+			request: request,
+			payload: payload,
+		});
+
+		let reviewType;
+		//switch statement for variable for reviewType
+		switch (request.eventType) {
+			case "APPROVE":
+				// code block
+				reviewType = "approve";
+				break;
+			case "REQUEST_CHANGES":
+				// code block
+				reviewType = "request-changes";
+				break;
+			default:
+				// code block
+				reviewType = "comments"; //TODO: Fix this
+		}
+
+		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
+
+		const response = await this.post<BitbucketSubmitReviewRequest, any>(
+			`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`,
+			payload
+		);
+
+		const directives: Directive[] = [
+			{
+				type: "reviewSubmitted",
+				data: {
+					updatedAt: new Date().getTime() as any,
+					state: response.body.state,
+				},
+			},
+		];
+		return { directives: directives };
 	}
 
 	async getPullRequestFilesChanged(request: {
