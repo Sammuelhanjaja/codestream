@@ -64,8 +64,8 @@ import Tag from "../../Tag";
 import Timestamp from "../../Timestamp";
 import Tooltip from "../../Tooltip";
 
-const emojiMap: { [key: string]: string } = require("../../agent/emoji/emojis.json");
-const emojiRegex = /:([-+_a-z0-9]+):/g;
+// const emojiMap: { [key: string]: string } = require("../../agent/emoji/emojis.json");
+// const emojiRegex = /:([-+_a-z0-9]+):/g;
 
 export const Circle = styled.div`
 	width: 12px;
@@ -657,7 +657,7 @@ export const PullRequestConversationTab = (props: {
 					label: (
 						<>
 							<Circle style={{ backgroundColor: `#${_.color}` }} />
-							{_.name.replace(emojiRegex, (s: string, code: string) => emojiMap[code] || s)}
+							{/* {_.name.replace(emojiRegex, (s: string, code: string) => emojiMap[code] || s)} */}
 						</>
 					),
 					searchLabel: _.name,
@@ -1497,13 +1497,13 @@ export const PullRequestConversationTab = (props: {
 								return (
 									<Tag
 										key={index}
-										tag={{
-											label: _.name.replace(
-												emojiRegex,
-												(s: string, code: string) => emojiMap[code] || s
-											),
-											color: `#${_.color}`,
-										}}
+										// tag={{
+										// 	label: _.name.replace(
+										// 		emojiRegex,
+										// 		(s: string, code: string) => emojiMap[code] || s
+										// 	),
+										// 	color: `#${_.color}`,
+										// }}
 									/>
 								);
 						  })
