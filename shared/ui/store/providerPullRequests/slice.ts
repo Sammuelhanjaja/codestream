@@ -841,27 +841,6 @@ const providerPullRequestsSlice = createSlice({
 							for (const key in directive.data) {
 								pr[key] = directive.data[key];
 							}
-						} else if (directive.type === "reviewSubmitted") {
-							//TODO: Fix for bitbucket
-							const node = pr.timelineItems.nodes.find(
-								_ => _.id === directive.data.pullRequestReview.id
-							);
-							if (node) {
-								for (const key of Object.keys(directive.data.updates)) {
-									node[key] = directive.data.updates[key];
-								}
-
-								if (node.comments) {
-									for (const comment of directive.data.comments) {
-										const existingComment = node.comments.nodes.find(
-											(_: any) => _.id === comment.id
-										);
-										if (existingComment) {
-											existingComment.state = comment.state;
-										}
-									}
-								}
-							}
 						} else if (directive.type === "addNode") {
 							pr.comments = pr.comments || [];
 							pr.comments.push(directive.data);

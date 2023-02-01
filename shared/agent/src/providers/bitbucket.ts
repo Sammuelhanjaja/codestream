@@ -37,7 +37,7 @@ import { GitRemoteLike } from "git/gitService";
 import { SessionContainer } from "../container";
 import { toRepoName } from "../git/utils";
 import { Logger } from "../logger";
-import { log, lspProvider } from "../system";
+import { Dates, log, lspProvider } from "../system";
 import { Directive, Directives } from "./directives";
 import {
 	getOpenedRepos,
@@ -474,6 +474,18 @@ interface BitbucketPullRequest {
 	state: string;
 	title: string;
 	updated_on: string;
+	participants?: {
+		type?: string;
+		user?: {
+			display_name: string;
+			type?: string;
+			nickname: string;
+		};
+		role?: string; // "PARTICIPANT / "REVIEWER"
+		approved: boolean;
+		state: string; // approved / changes_requested / null
+		participated_on: Date;
+	};
 }
 
 interface BitbucketDiffStat {
@@ -868,6 +880,8 @@ export class BitbucketProvider
 				avatarUrl: userResponse.links.avatar.href,
 			};
 
+			const participants = pr.body.participants;
+
 			const { repos } = SessionContainer.instance();
 			const allRepos = await repos.get();
 
@@ -927,6 +941,7 @@ export class BitbucketProvider
 						timelineItems: {
 							nodes: mappedTimelineItems,
 						},
+						participants: participants || [],
 						url: pr.body.links.html.href,
 						viewer: viewer,
 					} as any, //TODO: make this work
@@ -1066,7 +1081,7 @@ export class BitbucketProvider
 		return response;
 	}
 
-	//TODO: Fix for bitbucket
+	//since bb doesn't have a concept of review, this is bb version of submitReview (approve/unapprove, request-changes, merge)
 	async submitReview(request: {
 		pullRequestId: string;
 		text: string;
@@ -1074,18 +1089,6 @@ export class BitbucketProvider
 		// used with old servers
 		pullRequestReviewId?: string;
 	}): Promise<Directives> {
-		if (!request.eventType) {
-			request.eventType = "COMMENT";
-		}
-		if (
-			request.eventType !== "COMMENT" &&
-			request.eventType !== "APPROVE" &&
-			// for some reason I cannot get DISMISS to work...
-			// request.eventType !== "DISMISS" &&
-			request.eventType !== "REQUEST_CHANGES"
-		) {
-			throw new Error("Invalid eventType");
-		}
 		const payload: BitbucketSubmitReviewRequest = {
 			type: request.eventType,
 			message: request.text,
@@ -1098,18 +1101,31 @@ export class BitbucketProvider
 		let reviewType;
 		//switch statement for variable for reviewType
 		switch (request.eventType) {
-			case "APPROVE":
+			case "MERGE":
 				// code block
-				reviewType = "approve";
+				reviewType = "merge";
 				break;
 			case "REQUEST_CHANGES":
 				// code block
 				reviewType = "request-changes";
 				break;
+			case "UNAPPROVE":
+				reviewType = "unapprove";
+				break;
 			default:
 				// code block
-				reviewType = "comments"; //TODO: Fix this
+				reviewType = "approve";
 		}
+		//on the front end:
+		//check if this person has already approved or not,
+		//if not approved already, do approved -call submitReview
+		//else if approved, do an unapprove - call submitReview
+		//check if merged already or not
+		//if not merged already, do merge stuff -call submitReview -merge function?
+		//else if merged, don't do anything
+		//check if this person has already done request-changes
+		//if yes, don't do anything
+		//else do request-changes -call submitReview
 
 		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
 
@@ -1118,16 +1134,42 @@ export class BitbucketProvider
 			payload
 		);
 
-		const directives: Directive[] = [
-			{
-				type: "reviewSubmitted",
-				data: {
-					updatedAt: new Date().getTime() as any,
-					state: response.body.state,
+		//to be updated in directives:
+		//For approve/unapprove:
+		const approveFlag = response.body.approved; //either false or true
+		const reviewState = response.body.state; // either "approve", "changes_requested", or null
+		const username = response.body.user.display_name;
+		const updatedAt = response.body.participated_on;
+		// const mergeState = response.body.
+		// the approve boolean flag on the pr.participants
+		// the username and participated_on for whoever did the thing
+
+		//For  merge:
+		// the merge info on the pr.state(OPEN, MERGED, DECLINED, SUPERSEDED)
+		// who did the merge (username) & participated_on
+
+		//For request-changes:
+		// the state on participant (approved/changes_requested/null)
+		// who did the request-changes and when
+
+		return this.handleResponse(request.pullRequestId, {
+			directives: [
+				{
+					type: "updatePullRequest",
+					data: {
+						participants: {
+							user: {
+								display_name: username,
+							},
+							approved: approveFlag,
+							state: reviewState,
+							participated_on: updatedAt,
+						},
+						updatedAt: Dates.toUtcIsoNow(),
+					},
 				},
-			},
-		];
-		return { directives: directives };
+			],
+		});
 	}
 
 	async getPullRequestFilesChanged(request: {

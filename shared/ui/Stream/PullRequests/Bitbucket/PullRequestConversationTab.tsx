@@ -60,7 +60,6 @@ import {
 } from "../../PullRequestComponents";
 import { ColorDonut, PullRequestReviewStatus } from "../../PullRequestReviewStatus";
 import { GHOST, PullRequestTimelineItems } from "../../PullRequestTimelineItems";
-import Tag from "../../Tag";
 import Timestamp from "../../Timestamp";
 import Tooltip from "../../Tooltip";
 
@@ -579,41 +578,41 @@ export const PullRequestConversationTab = (props: {
 		setAvailableAssignees(assignees);
 	};
 
-	const assigneeMenuItems = React.useMemo(() => {
-		if (
-			availableAssignees === undefined &&
-			derivedState.currentPullRequest &&
-			derivedState.currentPullRequest.error &&
-			derivedState.currentPullRequest.error.message
-		) {
-			return [
-				{
-					label: (
-						<PRError>
-							<Icon name="alert" />
-							<div>{derivedState.currentPullRequest.error.message}</div>
-						</PRError>
-					),
-					noHover: true,
-				},
-			];
-		}
-		const assigneeIds = pr.assignees.nodes.map(_ => _.login);
-		if (availableAssignees && availableAssignees.length) {
-			const menuItems = (availableAssignees || []).map((_: any) => ({
-				checked: assigneeIds.includes(_.login),
-				label: <PRHeadshotName person={_} className="no-padding" />,
-				subtle: _.name,
-				searchLabel: `${_.login}:${_.name}`,
-				key: _.id,
-				action: () => toggleAssignee(_.id, !assigneeIds.includes(_.login)),
-			})) as any;
-			menuItems.unshift({ type: "search", placeholder: "Type or choose a name" });
-			return menuItems;
-		} else {
-			return [{ label: <LoadingMessage>Loading Assignees...</LoadingMessage>, noHover: true }];
-		}
-	}, [derivedState.currentPullRequest, availableAssignees, pr]);
+	// const assigneeMenuItems = React.useMemo(() => {
+	// 	if (
+	// 		availableAssignees === undefined &&
+	// 		derivedState.currentPullRequest &&
+	// 		derivedState.currentPullRequest.error &&
+	// 		derivedState.currentPullRequest.error.message
+	// 	) {
+	// 		return [
+	// 			{
+	// 				label: (
+	// 					<PRError>
+	// 						<Icon name="alert" />
+	// 						<div>{derivedState.currentPullRequest.error.message}</div>
+	// 					</PRError>
+	// 				),
+	// 				noHover: true,
+	// 			},
+	// 		];
+	// 	}
+	// 	const assigneeIds = pr.assignees.nodes.map(_ => _.login);
+	// 	if (availableAssignees && availableAssignees.length) {
+	// 		const menuItems = (availableAssignees || []).map((_: any) => ({
+	// 			checked: assigneeIds.includes(_.login),
+	// 			label: <PRHeadshotName person={_} className="no-padding" />,
+	// 			subtle: _.name,
+	// 			searchLabel: `${_.login}:${_.name}`,
+	// 			key: _.id,
+	// 			action: () => toggleAssignee(_.id, !assigneeIds.includes(_.login)),
+	// 		})) as any;
+	// 		menuItems.unshift({ type: "search", placeholder: "Type or choose a name" });
+	// 		return menuItems;
+	// 	} else {
+	// 		return [{ label: <LoadingMessage>Loading Assignees...</LoadingMessage>, noHover: true }];
+	// 	}
+	// }, [derivedState.currentPullRequest, availableAssignees, pr]);
 
 	const toggleAssignee = async (id: string, onOff: boolean) => {
 		setIsLoadingMessage(onOff ? "Adding Assignee..." : "Removing Assignee...");
@@ -1450,11 +1449,11 @@ export const PullRequestConversationTab = (props: {
 						  ))
 						: "No reviewers"}
 				</PRSection>
-				<PRSection>
-					<h1>
-						<InlineMenu
+				{/* <PRSection> */}
+				{/* <h1> */}
+				{/* <InlineMenu
 							className="subtle"
-							items={assigneeMenuItems}
+							// items={assigneeMenuItems}
 							onOpen={fetchAvailableAssignees}
 							title="Assign up to 10 people to this pull request"
 							noChevronDown
@@ -1462,8 +1461,8 @@ export const PullRequestConversationTab = (props: {
 						>
 							<Icon name="gear" className="settings clickable" onClick={() => {}} />
 							Assignees
-						</InlineMenu>
-					</h1>
+						</InlineMenu> */}
+				{/* </h1>
 					{pr.assignees && pr.assignees.nodes.length > 0 ? (
 						pr.assignees.nodes.map((_: any, index: number) => (
 							<span key={index}>
@@ -1477,8 +1476,8 @@ export const PullRequestConversationTab = (props: {
 							<a onClick={() => toggleAssignee(pr.viewer.id, true)}>assign yourself</a>
 						</>
 					)}
-				</PRSection>
-				<PRSection>
+				</PRSection> */}
+				{/* <PRSection>
 					<h1>
 						<InlineMenu
 							className="subtle"
@@ -1508,8 +1507,8 @@ export const PullRequestConversationTab = (props: {
 								);
 						  })
 						: "None yet"}
-				</PRSection>
-				<PRSection>
+				</PRSection> */}
+				{/* <PRSection>
 					<h1>
 						<InlineMenu
 							className="subtle"
@@ -1530,8 +1529,8 @@ export const PullRequestConversationTab = (props: {
 								</div>
 						  ))
 						: "None yet"}
-				</PRSection>
-				<PRSection>
+				</PRSection> */}
+				{/* <PRSection>
 					<h1>
 						<InlineMenu
 							className="subtle"
@@ -1546,7 +1545,7 @@ export const PullRequestConversationTab = (props: {
 						</InlineMenu>
 					</h1>
 					{pr.milestone ? <div>{pr.milestone.title}</div> : "No milestone"}
-				</PRSection>
+				</PRSection> */}
 				{/* https://github.community/t/get-all-issues-linked-to-a-pull-request/14653 
 				<PRSection>
 					<h1>
@@ -1571,8 +1570,13 @@ export const PullRequestConversationTab = (props: {
 					<h1>{participantsLabel}</h1>
 					<PRHeadshots>
 						{pr.participants &&
-							pr.participants.nodes.map((_: any) => (
-								<PRHeadshot display="inline-block" key={_.avatarUrl} person={_} size={20} />
+							pr.participants.map((_: any) => (
+								<PRHeadshot
+									display="inline-block"
+									key={_.user.links.avatar.href}
+									person={_}
+									size={20}
+								/>
 							))}
 					</PRHeadshots>
 				</PRSection>

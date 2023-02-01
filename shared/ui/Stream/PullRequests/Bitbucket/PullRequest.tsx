@@ -56,15 +56,12 @@ import {
 	PRStatus,
 	PRStatusButton,
 	PRStatusMessage,
-	PRSubmitReviewButton,
 	PRTitle,
-	PRIAmRequested,
 } from "../../PullRequestComponents";
 import Tooltip from "../../Tooltip";
 import { PullRequestFileComments } from "../../PullRequestFileComments";
 import Timestamp from "../../Timestamp";
 import { setUserPreference } from "../../actions";
-import { PullRequestFinishReview } from "../../PullRequestFinishReview";
 import ScrollBox from "../../ScrollBox";
 import { PullRequestFilesChangedTab } from "../../PullRequestFilesChangedTab";
 import { PullRequestCommitsTab } from "../../PullRequestCommitsTab";
@@ -669,7 +666,7 @@ export const PullRequest = () => {
 					<CreateCodemarkIcons narrow onebutton />
 					{isLoadingMessage && <FloatingLoadingMessage>{isLoadingMessage}</FloatingLoadingMessage>}
 					<PRHeader>
-						{iAmRequested && activeTab == 1 && (
+						{/* {iAmRequested && activeTab == 1 && (
 							<PRIAmRequested>
 								<div>
 									<b>{(pr.author || GHOST).login}</b> requested your review
@@ -685,7 +682,7 @@ export const PullRequest = () => {
 									Add <span className="wide-text">your</span> review
 								</Button>
 							</PRIAmRequested>
-						)}
+						)} */}
 						<PRTitle className={editingTitle ? "editing" : ""}>
 							{editingTitle ? (
 								<PREditTitle>
@@ -752,14 +749,12 @@ export const PullRequest = () => {
 									{action} {pr.commits && pr.commits.totalCount} commits into{" "}
 									<Link href={`${pr.repoUrl}/tree/${pr.baseRefName}`}>
 										<PRBranch>
-											{pr.repository && pr.repository.name}:{pr.baseRefName}
+											{pr.repository.name}:{pr.baseRefName}
 										</PRBranch>
 									</Link>
 									{" from "}
-									<Link
-										href={`${pr.headRepository?.url}/tree/${encodeURIComponent(pr.headRefName)}`}
-									>
-										<PRBranch>{pr.headRefName}</PRBranch>
+									<Link href={`${pr.url}`}>
+										<PRBranch>{pr.title}</PRBranch>
 									</Link>{" "}
 									<Icon
 										title="Copy"
@@ -851,7 +846,7 @@ export const PullRequest = () => {
 										},
 									]}
 								>
-									<span>
+									{/* <span>
 										<Icon
 											title="View Settings"
 											trigger={["hover"]}
@@ -860,7 +855,7 @@ export const PullRequest = () => {
 											className={`${isLoadingPR ? "spin" : ""}`}
 											name="gear"
 										/>
-									</span>
+									</span> */}
 								</InlineMenu>
 								<span>
 									<Icon
@@ -877,6 +872,36 @@ export const PullRequest = () => {
 										placement="bottom"
 										className={`${isLoadingPR ? "spin" : ""}`}
 										name="refresh"
+									/>
+								</span>
+								<span>
+									<Icon
+										name="thumbsup"
+										title="Approve"
+										trigger={["hover"]}
+										delay={1}
+										placement="bottom"
+										// className={`${isLoadingPR ? "spin" : ""}`}
+									/>
+								</span>
+								<span>
+									<Icon
+										name="review"
+										title="Merge"
+										trigger={["hover"]}
+										delay={1}
+										placement="bottom"
+										// className={`${isLoadingPR ? "spin" : ""}`}
+									/>
+								</span>
+								<span>
+									<Icon
+										name="question"
+										title="Request Changes"
+										trigger={["hover"]}
+										delay={1}
+										placement="bottom"
+										// className={`${isLoadingPR ? "spin" : ""}`}
 									/>
 								</span>
 							</PRActionButtons>
@@ -905,7 +930,7 @@ export const PullRequest = () => {
 								<span className="wide-text">Checks</span>
 								<PRBadge>{pr.numChecks}</PRBadge>
 							</Tab> */}
-							{pr.pendingReview ? (
+							{/* {pr.pendingReview ? (
 								<PRSubmitReviewButton>
 									<Button variant="success" onClick={() => setFinishReviewOpen(!finishReviewOpen)}>
 										Finish<span className="wide-text"> review</span>
@@ -923,30 +948,29 @@ export const PullRequest = () => {
 										/>
 									)}
 								</PRSubmitReviewButton>
-							) : (
-								<PRPlusMinus>
-									<span className="added">
-										+
-										{!pr.files
-											? 0
-											: pr.files.nodes
-													.map(_ => _.additions)
-													.reduce((acc, val) => acc + val, 0)
-													.toString()
-													.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-									</span>{" "}
-									<span className="deleted">
-										-
-										{!pr.files
-											? 0
-											: pr.files.nodes
-													.map(_ => _.deletions)
-													.reduce((acc, val) => acc + val, 0)
-													.toString()
-													.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-									</span>
-								</PRPlusMinus>
-							)}
+							) : ( */}
+							<PRPlusMinus>
+								<span className="added">
+									+
+									{!pr.files
+										? 0
+										: pr.files.nodes
+												.map(_ => _.additions)
+												.reduce((acc, val) => acc + val, 0)
+												.toString()
+												.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+								</span>{" "}
+								<span className="deleted">
+									-
+									{!pr.files
+										? 0
+										: pr.files.nodes
+												.map(_ => _.deletions)
+												.reduce((acc, val) => acc + val, 0)
+												.toString()
+												.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+								</span>
+							</PRPlusMinus>
 						</Tabs>
 					</PRHeader>
 					{!derivedState.composeCodemarkActive && (
