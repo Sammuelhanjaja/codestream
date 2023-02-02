@@ -689,6 +689,25 @@ export interface FetchThirdPartyPullRequestPullRequest {
 		nodes: {
 			avatarUrl: string;
 		}[];
+		participant?: {
+			type?: string;
+			user?: {
+				display_name?: string;
+				links?: {
+					avatar?: {
+						href?: string;
+					}
+				}
+				type?: string;
+				uuid?: string;
+				account_id?: string;
+				nickname?: string;
+			}
+			role?: string;
+			approved?: boolean;
+			state?: string;
+			participated_on?: string;
+		}[]
 	};
 	assignees: {
 		nodes: {

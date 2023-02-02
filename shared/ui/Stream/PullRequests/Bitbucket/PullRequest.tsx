@@ -187,6 +187,12 @@ export const PullRequest = () => {
 		await dispatch(clearCurrentPullRequest());
 	};
 
+	// const [reviewText, setReviewText] = useState("");
+	const [submittingReview, setSubmittingReview] = useState(false);
+	const [reviewType, setReviewType] = useState<
+		"MERGE" | "APPROVE" | "UNAPPROVE" | "REQUEST_CHANGES"
+	>("APPROVE");
+
 	const PRError = styled.div`
 		padding: 0px 15px 20px 15px;
 		display: flex;
@@ -618,6 +624,29 @@ export const PullRequest = () => {
 		breakpoint: breakpoints[derivedState.viewPreference],
 	});
 
+	// const submitReview = async e => {
+	// 	// e.preventDefault();
+	// 	// e.stopPropagation();
+	// 	setIsLoadingMessage("Submitting Review...");
+	// 	setSubmittingReview(true);
+	// 	HostApi.instance.track("PR Review Finished", {
+	// 		Host: pr.providerId,
+	// 		"Review Type": reviewType,
+	// 	});
+	// 	await dispatch(
+	// 		api({
+	// 			method: "submitReview",
+	// 			params: {
+	// 				eventType: reviewType,
+	// 				pullRequestId: pr?.id
+	// 				// text: replaceHtml(reviewText),
+	// 			},
+	// 		})
+	// 	);
+	// 	setFinishReviewOpen && setFinishReviewOpen(false);
+	// 	setIsLoadingMessage("");
+	// };
+
 	if (!pr) {
 		if (generalError) {
 			return (
@@ -659,6 +688,8 @@ export const PullRequest = () => {
 				</ThemeProvider>
 			);
 		}
+
+		//
 
 		return (
 			<ThemeProvider theme={addViewPreferencesToTheme}>
@@ -875,14 +906,43 @@ export const PullRequest = () => {
 									/>
 								</span>
 								<span>
-									<Icon
+									{/* {pr.participants.user.approved ? (
+										<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
 										name="thumbsup"
 										title="Approve"
 										trigger={["hover"]}
 										delay={1}
 										placement="bottom"
+										onClick={(e) => {
+											setReviewType("APPROVE");
+											submitReview(true)
+										}}
 										// className={`${isLoadingPR ? "spin" : ""}`}
 									/>
+									)} */}
+									{pr.viewerDidAuthor ? (
+										<Icon //needs to not be available if it's their own PR
+											name="thumbsup"
+											title="Cannot approve PR"
+											trigger={["hover"]}
+											delay={1}
+											placement="bottom"
+											// className={`${isLoadingPR ? "spin" : ""}`}
+										/>
+									) : (
+										<Icon //it's not their own PR and it's not approved yet
+											name="thumbsup"
+											title="Approve"
+											trigger={["hover"]}
+											delay={1}
+											placement="bottom"
+											onClick={e => {
+												setReviewType("APPROVE");
+												// submitReview(true)
+											}}
+											// className={`${isLoadingPR ? "spin" : ""}`}
+										/>
+									)}
 								</span>
 								<span>
 									<Icon
@@ -895,12 +955,16 @@ export const PullRequest = () => {
 									/>
 								</span>
 								<span>
-									<Icon
+									<Icon //if this person already requested changes, make not available
 										name="question"
 										title="Request Changes"
 										trigger={["hover"]}
 										delay={1}
 										placement="bottom"
+										onClick={() => {
+											setReviewType("REQUEST_CHANGES");
+											// submitReview(true)
+										}}
 										// className={`${isLoadingPR ? "spin" : ""}`}
 									/>
 								</span>
@@ -981,7 +1045,7 @@ export const PullRequest = () => {
 								style={{ paddingTop: "10px" }}
 							>
 								{activeTab === 1 && (
-									<PullRequestConversationTab
+									<PullRequestConversationTab //TODO: this needs to be fixed to show comments
 										bbRepo={bbRepo}
 										autoCheckedMergeability={autoCheckedMergeability}
 										checkMergeabilityStatus={checkMergeabilityStatus}

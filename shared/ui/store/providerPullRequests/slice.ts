@@ -841,6 +841,14 @@ const providerPullRequestsSlice = createSlice({
 							for (const key in directive.data) {
 								pr[key] = directive.data[key];
 							}
+						} else if (directive.type === "addApprovedBy") {
+							//this is for approve
+							// go through the array of participants, match the uuid, then do update
+							const arr_length = pr.participants.participant?.length;
+						} else if (directive.type === "removeApprovedBy") {
+							//this is for unapprove
+						} else if (directive.type === "reviewSubmitted") {
+							//This is for request changes
 						} else if (directive.type === "addNode") {
 							pr.comments = pr.comments || [];
 							pr.comments.push(directive.data);

@@ -247,6 +247,30 @@ interface BitbucketRepoFull extends BitbucketRepo {
 		branching_model: boolean;
 	};
 	author: BitbucketAuthor;
+	participants?: {
+		nodes?: {
+			avatarUrl?: string;
+		}[];
+		participant?: {
+			type: string;
+			user: {
+				display_name: string;
+				links: {
+					avatar: {
+						href: string;
+					};
+				};
+				type?: string;
+				uuid: string;
+				account_id?: string;
+				nickname: string;
+			};
+			role: string;
+			approved: boolean;
+			state: string;
+			participated_on: string;
+		}[];
+	};
 }
 
 interface BitbucketPullRequestComment2 {
@@ -279,12 +303,21 @@ interface BitbucketMergeRequest {
 
 interface BitbucketSubmitReviewRequest {
 	type: string;
-	message?: string;
 	approved?: boolean;
 	state?: string;
 	participated_on?: Date;
+	role?: string;
 	user?: {
-		username?: string;
+		display_name?: string;
+		links?: {
+			avatar?: {
+				href?: string;
+			};
+		};
+		uuid?: string;
+		account_id?: string;
+		nickname?: string;
+		type?: string;
 	};
 }
 
@@ -475,16 +508,28 @@ interface BitbucketPullRequest {
 	title: string;
 	updated_on: string;
 	participants?: {
-		type?: string;
-		user?: {
-			display_name: string;
-			type?: string;
-			nickname: string;
-		};
-		role?: string; // "PARTICIPANT / "REVIEWER"
-		approved: boolean;
-		state: string; // approved / changes_requested / null
-		participated_on: Date;
+		nodes?: {
+			avatarUrl?: string;
+		}[];
+		participant?: {
+			type: string;
+			user: {
+				display_name: string;
+				links: {
+					avatar: {
+						href: string;
+					};
+				};
+				type?: string;
+				uuid: string;
+				account_id?: string;
+				nickname: string;
+			};
+			role: string; // PARTICIPANT, REVIEWER
+			approved: boolean;
+			state: string; // approved, changes_requested, null
+			participated_on: string;
+		}[];
 	};
 }
 
@@ -874,13 +919,15 @@ export class BitbucketProvider
 					new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
 			);
 
+			const mappedParticipants = pr.body.participants?.participant?.map(_ => {
+				return this.mapParticipants;
+			});
+
 			const viewer = {
 				id: userResponse.account_id,
 				login: userResponse.username,
 				avatarUrl: userResponse.links.avatar.href,
 			};
-
-			const participants = pr.body.participants;
 
 			const { repos } = SessionContainer.instance();
 			const allRepos = await repos.get();
@@ -941,7 +988,7 @@ export class BitbucketProvider
 						timelineItems: {
 							nodes: mappedTimelineItems,
 						},
-						participants: participants || [],
+						participants: mappedParticipants || [],
 						url: pr.body.links.html.href,
 						viewer: viewer,
 					} as any, //TODO: make this work
@@ -1081,17 +1128,17 @@ export class BitbucketProvider
 		return response;
 	}
 
-	//since bb doesn't have a concept of review, this is bb version of submitReview (approve/unapprove, request-changes, merge)
+	//since bb doesn't have a concept of review, this is bb version of submitReview (approve/unapprove, request-changes)
 	async submitReview(request: {
 		pullRequestId: string;
-		text: string;
+		// text: string;
 		eventType: string;
 		// used with old servers
 		pullRequestReviewId?: string;
 	}): Promise<Directives> {
 		const payload: BitbucketSubmitReviewRequest = {
 			type: request.eventType,
-			message: request.text,
+			// message: request.text,
 		};
 		Logger.log(`commenting:pullrequestsubmitreview`, {
 			request: request,
@@ -1101,12 +1148,7 @@ export class BitbucketProvider
 		let reviewType;
 		//switch statement for variable for reviewType
 		switch (request.eventType) {
-			case "MERGE":
-				// code block
-				reviewType = "merge";
-				break;
 			case "REQUEST_CHANGES":
-				// code block
 				reviewType = "request-changes";
 				break;
 			case "UNAPPROVE":
@@ -1140,6 +1182,7 @@ export class BitbucketProvider
 		const reviewState = response.body.state; // either "approve", "changes_requested", or null
 		const username = response.body.user.display_name;
 		const updatedAt = response.body.participated_on;
+		const userId = response.body.uuid;
 		// const mergeState = response.body.
 		// the approve boolean flag on the pr.participants
 		// the username and participated_on for whoever did the thing
@@ -1152,20 +1195,50 @@ export class BitbucketProvider
 		// the state on participant (approved/changes_requested/null)
 		// who did the request-changes and when
 
+		// TODO change the type based on approve/unapprove/request-changes
+		let approveType = "";
+		if (reviewType === "approve") {
+			approveType = "addApprovedBy";
+		} else if (reviewType === "unapprove") {
+			approveType = "removeApprovedBy";
+		} else if (reviewType === "request-changes") {
+			approveType = "reviewSubmitted";
+		}
+
 		return this.handleResponse(request.pullRequestId, {
 			directives: [
 				{
 					type: "updatePullRequest",
 					data: {
-						participants: {
+						updatedAt: Dates.toUtcIsoNow(),
+					},
+				},
+				{
+					type:
+						reviewType === "approve"
+							? "addApprovedBy"
+							: reviewType === "unapprove"
+							? "removeApprovedBy"
+							: "reviewSubmitted",
+					data: {
+						participant: {
+							type: response.body.type,
 							user: {
+								uuid: userId,
 								display_name: username,
+								links: {
+									avatar: {
+										href: {
+											avatarUrl: response.body.user.links.avatar.href,
+										},
+									},
+								},
 							},
+							role: response.body.role,
 							approved: approveFlag,
 							state: reviewState,
 							participated_on: updatedAt,
 						},
-						updatedAt: Dates.toUtcIsoNow(),
 					},
 				},
 			],
@@ -1225,6 +1298,28 @@ export class BitbucketProvider
 			},
 			bodyText: comment.content?.raw,
 			createdAt: comment.created_on,
+		};
+	}
+
+	private mapParticipants(participant: BitbucketSubmitReviewRequest) {
+		return {
+			type: participant.type,
+			user: {
+				display_name: participant.user?.display_name,
+				links: {
+					avatar: {
+						href: participant.user?.links?.avatar?.href,
+					},
+				},
+				type: participant.user?.type,
+				uuid: participant.user?.uuid,
+				account_id: participant.user?.account_id,
+				nickname: participant.user?.nickname,
+			},
+			role: participant.role,
+			approved: participant.approved,
+			state: participant.state,
+			participated_on: participant.participated_on,
 		};
 	}
 
