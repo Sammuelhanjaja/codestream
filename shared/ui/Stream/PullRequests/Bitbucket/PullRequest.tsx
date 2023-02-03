@@ -602,16 +602,20 @@ export const PullRequest = () => {
 			);
 		}
 
-		const PRApproved = () => {
-			if (pr.participants.participant) {
-				const partipantLength = pr.participants.participant?.length;
-				const approvedParticpants = pr.participants.participant.filter(
+		const isPRApproved = () => {
+			if (pr.participants) {
+				const participantLength = pr.participants.nodes.length;
+				const unapprovedParticipants = pr.participants.nodes.find(_ => !_.approved);
+				if (unapprovedParticipants) {
+					return false;
+				}
+				const approvedParticipants = pr.participants.nodes.filter(
 					_ => _.approved && _.state === "approved"
 				);
-				const isApproved = partipantLength == approvedParticpants.length;
+				const isApproved = participantLength == approvedParticipants.length;
 				return isApproved;
 			}
-			return false;
+			return undefined;
 		};
 
 		return (
@@ -802,14 +806,14 @@ export const PullRequest = () => {
 								</span>
 								<span>
 									<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-										name={`${PRApproved()}` ? "thumbsdown" : "thumbsup"}
+										name={isPRApproved() ? "thumbsup" : "thumbsdown"}
 										title="Approve"
 										trigger={["hover"]}
 										delay={1}
 										placement="bottom"
 										onClick={e => {
 											setReviewType("APPROVE");
-											submitReview;
+											// submitReview();
 										}}
 										// className={`${isLoadingPR ? "spin" : ""}`}
 									/>

@@ -250,8 +250,6 @@ interface BitbucketRepoFull extends BitbucketRepo {
 	participants?: {
 		nodes?: {
 			avatarUrl?: string;
-		}[];
-		participant?: {
 			type?: string;
 			user?: {
 				display_name?: string;
@@ -515,8 +513,6 @@ interface BitbucketPullRequest {
 	participants?: {
 		nodes?: {
 			avatarUrl?: string;
-		}[];
-		participant?: {
 			type: string;
 			user: {
 				display_name: string;
@@ -939,13 +935,6 @@ export class BitbucketProvider
 				repos: allRepos.repos,
 			});
 
-			const participant_array = pr.body.participants;
-			console.log(
-				"*********************** participant_array, ",
-				participant_array,
-				"**************************"
-			);
-
 			response = {
 				viewer: viewer,
 				repository: {
@@ -996,7 +985,9 @@ export class BitbucketProvider
 						timelineItems: {
 							nodes: mappedTimelineItems,
 						},
-						participants: participant_array || [],
+						participants: {
+							nodes: pr.body.participants,
+						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
 					} as any, //TODO: make this work
@@ -1305,33 +1296,6 @@ export class BitbucketProvider
 			bodyText: comment.content?.raw,
 			createdAt: comment.created_on,
 		};
-	}
-
-	private mapParticipants(participant: BitbucketSubmitReviewRequestResponse) {
-		const user = participant.user;
-		if (user) {
-			return {
-				type: user.type,
-				user: {
-					display_name: user.display_name,
-					links: {
-						avatar: {
-							href: user.links?.avatar?.href,
-						},
-					},
-					type: user.type,
-					uuid: user.uuid,
-					account_id: user.account_id,
-					nickname: user.nickname,
-				},
-				role: participant.role,
-				approved: participant.approved,
-				state: participant.state,
-				participated_on: participant.participated_on,
-			};
-		} else {
-			return;
-		}
 	}
 
 	async getRemotePaths(repo: any, _projectsByRemotePath: any) {
