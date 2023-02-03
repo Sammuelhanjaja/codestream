@@ -533,86 +533,6 @@ export const PullRequest = () => {
 		_checkMergeabilityStatus();
 	}, [derivedState.currentPullRequest, derivedState.currentPullRequestId]);
 
-	let interval;
-	let intervalCounter = 0;
-	// useEffect(() => {
-	// 	interval && clearInterval(interval);
-	// 	if (!derivedState.currentPullRequest) return;
-
-	// 	if (
-	// 		autoCheckedMergeability === "UNCHECKED" ||
-	// 		(derivedState.currentPullRequest.conversations &&
-	// 			derivedState.currentPullRequest.conversations.repository &&
-	// 			derivedState.currentPullRequest.conversations.repository.pullRequest &&
-	// 			derivedState.currentPullRequest.conversations.repository.pullRequest.mergeable ===
-	// 				"UNKNOWN")
-	// 	) {
-	// 		console.log("PullRequest pr mergeable is UNKNOWN");
-	// 		setTimeout(() => {
-	// 			_checkMergeabilityStatus().then(_ => {
-	// 				setAutoCheckedMergeability(_ ? "CHECKED" : "UNKNOWN");
-	// 			});
-	// 		}, 8000);
-	// 	}
-	// 	interval = setInterval(async () => {
-	// 		// checks for 15 min
-	// 		if (intervalCounter >= 3) {
-	// 			interval && clearInterval(interval);
-	// 			intervalCounter = 0;
-	// 			console.warn(`stopped getPullRequestLastUpdated interval counter=${intervalCounter}`);
-	// 			return;
-	// 		}
-	// 		try {
-	// 			const response = await dispatch(
-	// 				api({
-	// 					method: "getPullRequestLastUpdated",
-	// 					params: {},
-	// 					options: { preventClearError: true, preventErrorReporting: true },
-	// 				})
-	// 			).unwrap();
-	// 			if (
-	// 				derivedState.currentPullRequest &&
-	// 				response &&
-	// 				response.updatedAt &&
-	// 				derivedState.currentPullRequestLastUpdated &&
-	// 				// if more than 5 seconds "off""
-	// 				(Date.parse(response.updatedAt) -
-	// 					Date.parse(derivedState.currentPullRequestLastUpdated)) /
-	// 					1000 >
-	// 					5
-	// 			) {
-	// 				console.warn(
-	// 					"getPullRequestLastUpdated is updating",
-	// 					response.updatedAt,
-	// 					derivedState.currentPullRequestLastUpdated,
-	// 					intervalCounter
-	// 				);
-	// 				intervalCounter = 0;
-	// 				reload();
-	// 				clearInterval(interval);
-	// 			} else {
-	// 				intervalCounter++;
-	// 				console.log("incrementing counter", intervalCounter);
-	// 			}
-	// 		} catch (ex) {
-	// 			console.error(ex);
-	// 			interval && clearInterval(interval);
-	// 		}
-	// 	}, 300000); //300000 === 5 minute interval
-
-	// 	return () => {
-	// 		interval && clearInterval(interval);
-	// 	};
-	// }, [
-	// 	derivedState.currentPullRequestLastUpdated,
-	// 	derivedState.currentPullRequest,
-	// 	autoCheckedMergeability,
-	// ]);
-
-	const iAmRequested = useMemo(() => {
-		return pr?.viewer?.login !== pr?.author?.login;
-	}, [pr, pr?.updatedAt]);
-
 	const breakpoints = {
 		auto: "630px",
 		"side-by-side": "10px",
@@ -624,28 +544,21 @@ export const PullRequest = () => {
 		breakpoint: breakpoints[derivedState.viewPreference],
 	});
 
-	// const submitReview = async e => {
-	// 	// e.preventDefault();
-	// 	// e.stopPropagation();
-	// 	setIsLoadingMessage("Submitting Review...");
-	// 	setSubmittingReview(true);
-	// 	HostApi.instance.track("PR Review Finished", {
-	// 		Host: pr.providerId,
-	// 		"Review Type": reviewType,
-	// 	});
-	// 	await dispatch(
-	// 		api({
-	// 			method: "submitReview",
-	// 			params: {
-	// 				eventType: reviewType,
-	// 				pullRequestId: pr?.id
-	// 				// text: replaceHtml(reviewText),
-	// 			},
-	// 		})
-	// 	);
-	// 	setFinishReviewOpen && setFinishReviewOpen(false);
-	// 	setIsLoadingMessage("");
-	// };
+	const submitReview = async e => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!pr?.viewerDidAuthor) {
+			await dispatch(
+				api({
+					method: "submitReview",
+					params: {
+						eventType: reviewType,
+						pullRequestId: pr?.id,
+					},
+				})
+			);
+		}
+	};
 
 	if (!pr) {
 		if (generalError) {
@@ -689,7 +602,17 @@ export const PullRequest = () => {
 			);
 		}
 
-		//
+		const PRApproved = () => {
+			if (pr.participants.participant) {
+				const partipantLength = pr.participants.participant?.length;
+				const approvedParticpants = pr.participants.participant.filter(
+					_ => _.approved && _.state === "approved"
+				);
+				const isApproved = partipantLength == approvedParticpants.length;
+				return isApproved;
+			}
+			return false;
+		};
 
 		return (
 			<ThemeProvider theme={addViewPreferencesToTheme}>
@@ -697,23 +620,6 @@ export const PullRequest = () => {
 					<CreateCodemarkIcons narrow onebutton />
 					{isLoadingMessage && <FloatingLoadingMessage>{isLoadingMessage}</FloatingLoadingMessage>}
 					<PRHeader>
-						{/* {iAmRequested && activeTab == 1 && (
-							<PRIAmRequested>
-								<div>
-									<b>{(pr.author || GHOST).login}</b> requested your review
-									<span className="wide-text"> on this pull request</span>.
-								</div>
-								<Button
-									variant="success"
-									size="compact"
-									onClick={() => {
-										switchActiveTab(4);
-									}}
-								>
-									Add <span className="wide-text">your</span> review
-								</Button>
-							</PRIAmRequested>
-						)} */}
 						<PRTitle className={editingTitle ? "editing" : ""}>
 							{editingTitle ? (
 								<PREditTitle>
@@ -876,18 +782,7 @@ export const PullRequest = () => {
 												),
 										},
 									]}
-								>
-									{/* <span>
-										<Icon
-											title="View Settings"
-											trigger={["hover"]}
-											delay={1}
-											placement="bottom"
-											className={`${isLoadingPR ? "spin" : ""}`}
-											name="gear"
-										/>
-									</span> */}
-								</InlineMenu>
+								></InlineMenu>
 								<span>
 									<Icon
 										title="Reload"
@@ -906,43 +801,18 @@ export const PullRequest = () => {
 									/>
 								</span>
 								<span>
-									{/* {pr.participants.user.approved ? (
-										<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-										name="thumbsup"
+									<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
+										name={`${PRApproved()}` ? "thumbsdown" : "thumbsup"}
 										title="Approve"
 										trigger={["hover"]}
 										delay={1}
 										placement="bottom"
-										onClick={(e) => {
+										onClick={e => {
 											setReviewType("APPROVE");
-											submitReview(true)
+											submitReview;
 										}}
 										// className={`${isLoadingPR ? "spin" : ""}`}
 									/>
-									)} */}
-									{pr.viewerDidAuthor ? (
-										<Icon //needs to not be available if it's their own PR
-											name="thumbsup"
-											title="Cannot approve PR"
-											trigger={["hover"]}
-											delay={1}
-											placement="bottom"
-											// className={`${isLoadingPR ? "spin" : ""}`}
-										/>
-									) : (
-										<Icon //it's not their own PR and it's not approved yet
-											name="thumbsup"
-											title="Approve"
-											trigger={["hover"]}
-											delay={1}
-											placement="bottom"
-											onClick={e => {
-												setReviewType("APPROVE");
-												// submitReview(true)
-											}}
-											// className={`${isLoadingPR ? "spin" : ""}`}
-										/>
-									)}
 								</span>
 								<span>
 									<Icon
@@ -989,30 +859,6 @@ export const PullRequest = () => {
 								<span className="wide-text">Commits</span>
 								<PRBadge>{pr.commits.totalCount}</PRBadge>
 							</Tab>
-							{/* <Tab onClick={e => switchActiveTab(3)} active={activeTab == 3}>
-								<Icon name="check" />
-								<span className="wide-text">Checks</span>
-								<PRBadge>{pr.numChecks}</PRBadge>
-							</Tab> */}
-							{/* {pr.pendingReview ? (
-								<PRSubmitReviewButton>
-									<Button variant="success" onClick={() => setFinishReviewOpen(!finishReviewOpen)}>
-										Finish<span className="wide-text"> review</span>
-										<PRBadge>
-											{pr.pendingReview.comments ? pr.pendingReview.comments.totalCount : 0}
-										</PRBadge>
-										<Icon name="chevron-down" />
-									</Button>
-									{finishReviewOpen && (
-										<PullRequestFinishReview
-											pr={pr}
-											mode="dropdown"
-											setIsLoadingMessage={setIsLoadingMessage}
-											setFinishReviewOpen={setFinishReviewOpen}
-										/>
-									)}
-								</PRSubmitReviewButton>
-							) : ( */}
 							<PRPlusMinus>
 								<span className="added">
 									+

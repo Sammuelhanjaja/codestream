@@ -844,11 +844,28 @@ const providerPullRequestsSlice = createSlice({
 						} else if (directive.type === "addApprovedBy") {
 							//this is for approve
 							// go through the array of participants, match the uuid, then do update
-							const arr_length = pr.participants.participant?.length;
+							const user_id = directive.data.user.uuid;
+							for (const item in directive.data) {
+								if (pr.participants.participant?.includes(user_id)) {
+									pr.participants.participant[item] = directive.data[item];
+								}
+							}
 						} else if (directive.type === "removeApprovedBy") {
 							//this is for unapprove
+							const user_id = directive.data.user.uuid;
+							for (const item in directive.data) {
+								if (pr.participants.participant?.includes(user_id)) {
+									pr.participants.participant[item] = directive.data[item];
+								}
+							}
 						} else if (directive.type === "reviewSubmitted") {
 							//This is for request changes
+							const user_id = directive.data.user.uuid;
+							for (const item in directive.data) {
+								if (pr.participants.participant?.includes(user_id)) {
+									pr.participants.participant[item] = directive.data[item];
+								}
+							}
 						} else if (directive.type === "addNode") {
 							pr.comments = pr.comments || [];
 							pr.comments.push(directive.data);

@@ -252,23 +252,23 @@ interface BitbucketRepoFull extends BitbucketRepo {
 			avatarUrl?: string;
 		}[];
 		participant?: {
-			type: string;
-			user: {
-				display_name: string;
-				links: {
-					avatar: {
-						href: string;
+			type?: string;
+			user?: {
+				display_name?: string;
+				links?: {
+					avatar?: {
+						href?: string;
 					};
 				};
 				type?: string;
-				uuid: string;
+				uuid?: string;
 				account_id?: string;
-				nickname: string;
+				nickname?: string;
 			};
-			role: string;
-			approved: boolean;
-			state: string;
-			participated_on: string;
+			role?: string;
+			approved?: boolean;
+			state?: string;
+			participated_on?: string;
 		}[];
 	};
 }
@@ -301,24 +301,29 @@ interface BitbucketMergeRequest {
 	merge_strategy?: string;
 }
 
-interface BitbucketSubmitReviewRequest {
+interface BitbucketSubmitReviewRequestResponse {
 	type: string;
-	approved?: boolean;
-	state?: string;
-	participated_on?: Date;
-	role?: string;
-	user?: {
-		display_name?: string;
-		links?: {
-			avatar?: {
-				href?: string;
+	approved: boolean;
+	state: string;
+	participated_on: Date;
+	role: string;
+	user: {
+		display_name: string;
+		links: {
+			avatar: {
+				href: string;
 			};
 		};
-		uuid?: string;
-		account_id?: string;
-		nickname?: string;
-		type?: string;
+		uuid: string;
+		account_id: string;
+		nickname: string;
+		type: string;
 	};
+}
+[];
+
+interface BitbucketSubmitReviewRequest {
+	type: string;
 }
 
 interface BitBucketCreateCommentRequest {
@@ -919,10 +924,6 @@ export class BitbucketProvider
 					new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
 			);
 
-			const mappedParticipants = pr.body.participants?.participant?.map(_ => {
-				return this.mapParticipants;
-			});
-
 			const viewer = {
 				id: userResponse.account_id,
 				login: userResponse.username,
@@ -937,6 +938,13 @@ export class BitbucketProvider
 				repoUrl: pr.body.source?.repository?.links?.html?.href.toLowerCase(),
 				repos: allRepos.repos,
 			});
+
+			const participant_array = pr.body.participants;
+			console.log(
+				"*********************** participant_array, ",
+				participant_array,
+				"**************************"
+			);
 
 			response = {
 				viewer: viewer,
@@ -988,7 +996,7 @@ export class BitbucketProvider
 						timelineItems: {
 							nodes: mappedTimelineItems,
 						},
-						participants: mappedParticipants || [],
+						participants: participant_array || [],
 						url: pr.body.links.html.href,
 						viewer: viewer,
 					} as any, //TODO: make this work
@@ -1221,24 +1229,22 @@ export class BitbucketProvider
 							? "removeApprovedBy"
 							: "reviewSubmitted",
 					data: {
-						participant: {
-							type: response.body.type,
-							user: {
-								uuid: userId,
-								display_name: username,
-								links: {
-									avatar: {
-										href: {
-											avatarUrl: response.body.user.links.avatar.href,
-										},
+						type: response.body.type,
+						user: {
+							uuid: userId,
+							display_name: username,
+							links: {
+								avatar: {
+									href: {
+										avatarUrl: response.body.user.links.avatar.href,
 									},
 								},
 							},
-							role: response.body.role,
-							approved: approveFlag,
-							state: reviewState,
-							participated_on: updatedAt,
 						},
+						role: response.body.role,
+						approved: approveFlag,
+						state: reviewState,
+						participated_on: updatedAt,
 					},
 				},
 			],
@@ -1301,26 +1307,31 @@ export class BitbucketProvider
 		};
 	}
 
-	private mapParticipants(participant: BitbucketSubmitReviewRequest) {
-		return {
-			type: participant.type,
-			user: {
-				display_name: participant.user?.display_name,
-				links: {
-					avatar: {
-						href: participant.user?.links?.avatar?.href,
+	private mapParticipants(participant: BitbucketSubmitReviewRequestResponse) {
+		const user = participant.user;
+		if (user) {
+			return {
+				type: user.type,
+				user: {
+					display_name: user.display_name,
+					links: {
+						avatar: {
+							href: user.links?.avatar?.href,
+						},
 					},
+					type: user.type,
+					uuid: user.uuid,
+					account_id: user.account_id,
+					nickname: user.nickname,
 				},
-				type: participant.user?.type,
-				uuid: participant.user?.uuid,
-				account_id: participant.user?.account_id,
-				nickname: participant.user?.nickname,
-			},
-			role: participant.role,
-			approved: participant.approved,
-			state: participant.state,
-			participated_on: participant.participated_on,
-		};
+				role: participant.role,
+				approved: participant.approved,
+				state: participant.state,
+				participated_on: participant.participated_on,
+			};
+		} else {
+			return;
+		}
 	}
 
 	async getRemotePaths(repo: any, _projectsByRemotePath: any) {
