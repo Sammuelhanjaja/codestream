@@ -66,6 +66,7 @@ import ScrollBox from "../../ScrollBox";
 import { PullRequestFilesChangedTab } from "../../PullRequestFilesChangedTab";
 import { PullRequestCommitsTab } from "../../PullRequestCommitsTab";
 import { PullRequestConversationTab } from "./PullRequestConversationTab";
+import { PullRequestReviewButton } from "./PullRequestReviewButton";
 
 const Root = styled.div`
 	@media only screen and (max-width: ${props => props.theme.breakpoint}) {
@@ -544,22 +545,6 @@ export const PullRequest = () => {
 		breakpoint: breakpoints[derivedState.viewPreference],
 	});
 
-	const submitReview = async e => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (!pr?.viewerDidAuthor) {
-			await dispatch(
-				api({
-					method: "submitReview",
-					params: {
-						eventType: reviewType,
-						pullRequestId: pr?.id,
-					},
-				})
-			);
-		}
-	};
-
 	if (!pr) {
 		if (generalError) {
 			return (
@@ -601,22 +586,6 @@ export const PullRequest = () => {
 				</ThemeProvider>
 			);
 		}
-
-		const isPRApproved = () => {
-			if (pr.participants) {
-				const participantLength = pr.participants.nodes.length;
-				const unapprovedParticipants = pr.participants.nodes.find(_ => !_.approved);
-				if (unapprovedParticipants) {
-					return false;
-				}
-				const approvedParticipants = pr.participants.nodes.filter(
-					_ => _.approved && _.state === "approved"
-				);
-				const isApproved = participantLength == approvedParticipants.length;
-				return isApproved;
-			}
-			return undefined;
-		};
 
 		return (
 			<ThemeProvider theme={addViewPreferencesToTheme}>
@@ -804,44 +773,7 @@ export const PullRequest = () => {
 										name="refresh"
 									/>
 								</span>
-								<span>
-									<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-										name={isPRApproved() ? "thumbsup" : "thumbsdown"}
-										title="Approve"
-										trigger={["hover"]}
-										delay={1}
-										placement="bottom"
-										onClick={e => {
-											setReviewType("APPROVE");
-											// submitReview();
-										}}
-										// className={`${isLoadingPR ? "spin" : ""}`}
-									/>
-								</span>
-								<span>
-									<Icon
-										name="review"
-										title="Merge"
-										trigger={["hover"]}
-										delay={1}
-										placement="bottom"
-										// className={`${isLoadingPR ? "spin" : ""}`}
-									/>
-								</span>
-								<span>
-									<Icon //if this person already requested changes, make not available
-										name="question"
-										title="Request Changes"
-										trigger={["hover"]}
-										delay={1}
-										placement="bottom"
-										onClick={() => {
-											setReviewType("REQUEST_CHANGES");
-											// submitReview(true)
-										}}
-										// className={`${isLoadingPR ? "spin" : ""}`}
-									/>
-								</span>
+								<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
 							</PRActionButtons>
 						</PRStatus>
 						{derivedState.currentPullRequest &&

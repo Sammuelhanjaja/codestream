@@ -1570,7 +1570,7 @@ export const PullRequestConversationTab = (props: {
 					<h1>{participantsLabel}</h1>
 					<PRHeadshots>
 						{pr.participants &&
-							pr.participants.map((_: any) => (
+							pr.participants.nodes.map((_: any) => (
 								<PRHeadshot
 									display="inline-block"
 									key={_.user.links.avatar.href}
