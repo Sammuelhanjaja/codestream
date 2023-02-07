@@ -18,16 +18,7 @@ export const PullRequestReviewButton = (props: Props) => {
 		"MERGE" | "APPROVE" | "UNAPPROVE" | "REQUEST_CHANGES"
 	>("APPROVE");
 
-	//check if user is the same person who authored the PR (props.pullrequest.viewerDidAuthor)
-	//if yes, gray out the approve and request changes buttons
-	//if it's the person's own PR and changes have been requested by somoene else, there should be some indicator of that -- WHAT DO WE WANT?
-	//check if the PR is already approved and by whom (isApproved -> returns false, undefined or true)
-	//if yes, it should show thumbsup button and on hover say "unapprove" (approvalStatus & approvalStatusText); (later - participants/reviewers list should show who approved)
-	//if no, it should show thumbsdown button and on hover say "approve" (approvalStatus & approvalStatusText);
-	//check if the PR already has requested changes
-	//if yes, WHAT DO WE WANT HERE? (requestChangesStatusText) (later - participants/reviewers list should show who requested changes)
-	//if no, WHAT DO WE WANT HERE? (requestChangesStatusText)
-
+	//TODO - there's no viewerDidAuthor on this pullrequest object
 	const submitReview = async () => {
 		if (!props.pullRequest.viewerDidAuthor) {
 			await dispatch(
@@ -44,7 +35,7 @@ export const PullRequestReviewButton = (props: Props) => {
 
 	const isPRApproved = () => {
 		//returns false, true or undefined
-		if (props.pullRequest.participants) {
+		if (props.pullRequest.participants.nodes) {
 			const participantLength = props.pullRequest.participants.nodes.length;
 			const unapprovedParticipants = props.pullRequest.participants.nodes.find(_ => !_.approved);
 			if (unapprovedParticipants) {
@@ -60,10 +51,63 @@ export const PullRequestReviewButton = (props: Props) => {
 	};
 
 	const isChangesRequested = () => {
-		if (props.pullRequest.participants) {
+		if (props.pullRequest.participants.nodes) {
 			const participantLength = props.pullRequest.participants.nodes.length;
 		}
 	};
+
+	const setReviewTypeHandler = userInput => {
+		if (userInput === "Approve") {
+			setReviewType("APPROVE");
+		} else if (userInput === "Unapprove") {
+			setReviewType("UNAPPROVE");
+		} else if (userInput === "Request Changes") {
+			setReviewType("REQUEST_CHANGES");
+		} else if (userInput === "Merge") {
+			setReviewType("MERGE"); //TODO: decide when and where to call merge
+		}
+	};
+
+	//check if user is the same person who authored the PR (props.pullrequest.viewerDidAuthor)
+	//TODO: there's no viewerDidAuthor on this pullrequest object ...
+	if (props.pullRequest.viewerDidAuthor) {
+		//if yes, gray out the approve and request changes buttons
+		//if it's the person's own PR and changes have been requested by somoene else, there should be some indicator of that -- WHAT DO WE WANT?
+	} else {
+		//check if the PR is already approved and by whom (isApproved -> returns false, undefined or true)
+		const approvedResponse = isPRApproved();
+		if (approvedResponse === undefined) {
+			//something?? this means there are no participants yet
+			setApprovalStatus("thumbsdown");
+			setApprovalStatusText("Approve");
+		} else if (approvedResponse === false) {
+			//not approved
+			//if no, it should show thumbsdown button and on hover say "approve" (approvalStatus & approvalStatusText);
+			setApprovalStatus("thumbsdown");
+			setApprovalStatusText("Approve");
+		} else {
+			//is approved
+			//if yes, it should show thumbsup button and on hover say "unapprove" (setApprovalStatus & setApprovalStatusText); (later - participants/reviewers list should show who approved)
+			setApprovalStatus("thumbsup");
+			setApprovalStatusText("Unapprove");
+		}
+
+		//options for state are: approved, changes_requested, null
+		//TODO: change so it goes isChangeRequested to loop through the array
+		if (props.pullRequest.state === "changes_requested") {
+			//changes have been requested - this means not approved
+			//check if the PR already has requested changes
+			//if yes, WHAT DO WE WANT HERE? (requestChangesStatusText) (later - participants/reviewers list should show who requested changes)
+			setRequestChangesStatusText("Changes Requested");
+		} else if (props.pullRequest.state === "null") {
+			//not approved & no changes requested
+			setRequestChangesStatusText("Request Changes");
+		} else {
+			//approved
+			//if no, WHAT DO WE WANT HERE? (requestChangesStatusText)
+			setRequestChangesStatusText("Request Changes");
+		}
+	}
 
 	return (
 		<div>
@@ -75,7 +119,7 @@ export const PullRequestReviewButton = (props: Props) => {
 					delay={1}
 					placement="bottom"
 					onClick={e => {
-						setReviewType("APPROVE"); //how to do this???
+						setReviewTypeHandler(approvalStatusText);
 						submitReview(); //how to make this work?
 					}}
 				/>
@@ -88,7 +132,7 @@ export const PullRequestReviewButton = (props: Props) => {
 					delay={1}
 					placement="bottom"
 					onClick={e => {
-						setReviewType("REQUEST_CHANGES"); //how to do this???
+						setReviewTypeHandler("Request Changes");
 						submitReview();
 					}}
 				/>
@@ -101,7 +145,7 @@ export const PullRequestReviewButton = (props: Props) => {
 					delay={1}
 					placement="bottom"
 					onClick={() => {
-						setReviewType("MERGE"); //how to do this???
+						setReviewTypeHandler("Merge");
 						// submitReview();
 					}}
 				/>
