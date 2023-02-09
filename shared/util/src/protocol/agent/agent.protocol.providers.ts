@@ -709,6 +709,9 @@ export interface FetchThirdPartyPullRequestPullRequest {
 			participated_on?: string;
 		}[];
 	};
+	//bitbucket
+	isApproved: boolean;
+	isRequested: boolean;
 	assignees: {
 		nodes: {
 			avatarUrl: string;

@@ -1,25 +1,68 @@
 import React, { useState } from "react";
 import Icon from "../../Icon";
 import { api } from "../../../store/providerPullRequests/thunks";
-import { useAppDispatch } from "@codestream/webview/utilities/hooks";
+import { useAppDispatch, useDidMount } from "@codestream/webview/utilities/hooks";
+import { FetchThirdPartyPullRequestPullRequest } from "@codestream/protocols/agent";
 
 interface Props {
-	pullRequest: any;
+	pullRequest: FetchThirdPartyPullRequestPullRequest;
 }
 
 export const PullRequestReviewButton = (props: Props) => {
 	const dispatch = useAppDispatch();
-	const [approvalStatus, setApprovalStatus] = useState<"thumbsup" | "thumbsdown">("thumbsup");
-	const [approvalStatusText, setApprovalStatusText] = useState<"Approve" | "Unapprove">("Approve");
-	const [requestChangesStatusText, setRequestChangesStatusText] = useState<
-		"Request Changes" | "Changes Requested"
-	>("Request Changes");
-	const [reviewType, setReviewType] = useState<
-		"MERGE" | "APPROVE" | "UNAPPROVE" | "REQUEST_CHANGES"
-	>("APPROVE");
 
-	//TODO - there's no viewerDidAuthor on this pullrequest object
-	const submitReview = async () => {
+	const mapping = {
+		APPROVED: { icon: "thumbsup", text: "Unapprove" },
+		UNAPPROVED: { icon: "thumbsdown", text: "Approve" },
+		REQUEST_CHANGES: { icon: "question", text: "Request Changes" },
+		CHANGES_REQUESTED: { icon: "question", text: "Changes Requested" },
+	};
+
+	const isApproved = props.pullRequest.isApproved;
+	const isRequested = props.pullRequest.isRequested;
+
+	useDidMount(() => {
+		display_logic();
+	});
+
+	const [reviewTypeApprovalIcon, setReviewTypeApprovalIcon] = useState("");
+	const [reviewTypeApprovalText, setReviewTypeApprovalText] = useState("");
+	const [reviewTypeRequestIcon, setReviewTypeRequestIcon] = useState("");
+	const [reviewTypeRequestText, setReviewTypeRequestText] = useState("");
+
+	const display_logic = () => {
+		if (!isApproved && !isRequested) {
+			// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
+			setReviewTypeApprovalIcon(mapping["UNAPPROVED"].icon);
+			setReviewTypeApprovalText(mapping["UNAPPROVED"].text);
+			setReviewTypeRequestIcon(mapping["REQUEST_CHANGES"].icon);
+			setReviewTypeRequestText(mapping["REQUEST_CHANGES"].text);
+		} else if (!isApproved && isRequested) {
+			//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
+			setReviewTypeApprovalIcon(mapping["UNAPPROVED"].icon);
+			setReviewTypeApprovalText(mapping["UNAPPROVED"].text);
+			setReviewTypeRequestIcon(mapping["CHANGES_REQUESTED"].icon);
+			setReviewTypeRequestText(mapping["CHANGES_REQUESTED"].text);
+		} else if (isApproved) {
+			setReviewTypeApprovalIcon(mapping["APPROVED"].icon);
+			setReviewTypeApprovalText(mapping["APPROVED"].text);
+			setReviewTypeRequestIcon(mapping["REQUEST_CHANGES"].icon);
+			setReviewTypeRequestText(mapping["REQUEST_CHANGES"].text);
+		}
+	};
+
+	const submitReview = async user_click => {
+		let reviewType;
+		if (user_click === "Approve") {
+			reviewType = "APPROVE";
+		} else if (user_click === "Unapprove") {
+			reviewType = "UNAPPROVE";
+		} else if (user_click === "Request Changes") {
+			reviewType = "REQUEST_CHANGES";
+		} else if (user_click === "Changes Requested") {
+			reviewType = "CHANGES_REQUESTED";
+		}
+
 		if (!props.pullRequest.viewerDidAuthor) {
 			await dispatch(
 				api({
@@ -33,107 +76,29 @@ export const PullRequestReviewButton = (props: Props) => {
 		}
 	};
 
-	const isPRApproved = () => {
-		//returns false, true or undefined
-		if (props.pullRequest.participants.nodes) {
-			const participantLength = props.pullRequest.participants.nodes.length;
-			const unapprovedParticipants = props.pullRequest.participants.nodes.find(_ => !_.approved);
-			if (unapprovedParticipants) {
-				return false;
-			}
-			const approvedParticipants = props.pullRequest.participants.nodes.filter(
-				_ => _.approved && _.state === "approved"
-			);
-			const isApproved = participantLength == approvedParticipants.length;
-			return isApproved;
-		}
-		return undefined;
-	};
-
-	const isChangesRequested = () => {
-		if (props.pullRequest.participants.nodes) {
-			const participantLength = props.pullRequest.participants.nodes.length;
-		}
-	};
-
-	const setReviewTypeHandler = userInput => {
-		if (userInput === "Approve") {
-			setReviewType("APPROVE");
-		} else if (userInput === "Unapprove") {
-			setReviewType("UNAPPROVE");
-		} else if (userInput === "Request Changes") {
-			setReviewType("REQUEST_CHANGES");
-		} else if (userInput === "Merge") {
-			setReviewType("MERGE"); //TODO: decide when and where to call merge
-		}
-	};
-
-	//check if user is the same person who authored the PR (props.pullrequest.viewerDidAuthor)
-	//TODO: there's no viewerDidAuthor on this pullrequest object ...
-	if (props.pullRequest.viewerDidAuthor) {
-		//if yes, gray out the approve and request changes buttons
-		//if it's the person's own PR and changes have been requested by somoene else, there should be some indicator of that -- WHAT DO WE WANT?
-	} else {
-		//check if the PR is already approved and by whom (isApproved -> returns false, undefined or true)
-		const approvedResponse = isPRApproved();
-		if (approvedResponse === undefined) {
-			//something?? this means there are no participants yet
-			setApprovalStatus("thumbsdown");
-			setApprovalStatusText("Approve");
-		} else if (approvedResponse === false) {
-			//not approved
-			//if no, it should show thumbsdown button and on hover say "approve" (approvalStatus & approvalStatusText);
-			setApprovalStatus("thumbsdown");
-			setApprovalStatusText("Approve");
-		} else {
-			//is approved
-			//if yes, it should show thumbsup button and on hover say "unapprove" (setApprovalStatus & setApprovalStatusText); (later - participants/reviewers list should show who approved)
-			setApprovalStatus("thumbsup");
-			setApprovalStatusText("Unapprove");
-		}
-
-		//options for state are: approved, changes_requested, null
-		//TODO: change so it goes isChangeRequested to loop through the array
-		if (props.pullRequest.state === "changes_requested") {
-			//changes have been requested - this means not approved
-			//check if the PR already has requested changes
-			//if yes, WHAT DO WE WANT HERE? (requestChangesStatusText) (later - participants/reviewers list should show who requested changes)
-			setRequestChangesStatusText("Changes Requested");
-		} else if (props.pullRequest.state === "null") {
-			//not approved & no changes requested
-			setRequestChangesStatusText("Request Changes");
-		} else {
-			//approved
-			//if no, WHAT DO WE WANT HERE? (requestChangesStatusText)
-			setRequestChangesStatusText("Request Changes");
-		}
-	}
-
 	return (
 		<div>
 			<span>
 				<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-					name={approvalStatus} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
-					title={approvalStatusText} //text that shows to user when they hover, can be either Approve of Unapprove
+					name={reviewTypeApprovalIcon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
+					title={reviewTypeApprovalText} //text that shows to user when they hover, can be either Approve of Unapprove
 					trigger={["hover"]}
 					delay={1}
 					placement="bottom"
 					onClick={e => {
-						setReviewTypeHandler(approvalStatusText);
-						submitReview(); //how to make this work?
+						submitReview(reviewTypeApprovalText);
 					}}
 				/>
 			</span>
 			<span>
 				<Icon // if it's the person's own PR, they cannot request changes, should be grayed out. If changes are requested, it should show that
-					name="question"
-					title={requestChangesStatusText} //text that shows to user when hover, can be either Changes Requested or Request Changes
+					name={reviewTypeRequestIcon}
+					title={reviewTypeRequestText} //text that shows to user when hover, can be either Changes Requested or Request Changes
 					trigger={["hover"]}
 					delay={1}
 					placement="bottom"
 					onClick={e => {
-						setReviewTypeHandler("Request Changes");
-						submitReview();
+						submitReview(reviewTypeRequestText);
 					}}
 				/>
 			</span>
@@ -144,8 +109,8 @@ export const PullRequestReviewButton = (props: Props) => {
 					trigger={["hover"]}
 					delay={1}
 					placement="bottom"
-					onClick={() => {
-						setReviewTypeHandler("Merge");
+					onClick={e => {
+						// setReviewTypeHandler("Merge");
 						// submitReview();
 					}}
 				/>

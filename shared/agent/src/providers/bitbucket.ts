@@ -140,6 +140,8 @@ interface BitbucketAuthor {
 interface BitbucketRepoFull extends BitbucketRepo {
 	type: string;
 	full_name: string;
+	isApproved?: boolean;
+	isRequested?: boolean;
 	links: {
 		self: {
 			href: string;
@@ -465,6 +467,8 @@ interface BitbucketUser {
 }
 
 interface BitbucketPullRequest {
+	isApproved?: boolean;
+	isRequested?: boolean;
 	viewer: {
 		id: number;
 		login: string;
@@ -935,6 +939,37 @@ export class BitbucketProvider
 				repos: allRepos.repos,
 			});
 
+			//check if PR is approved or unapproved
+			const isPRApproved = () => {
+				//returns false or true
+				if (pr.body.participants?.nodes) {
+					const participantLength = pr.body.participants.nodes.length;
+					const unapprovedParticipants = pr.body.participants.nodes.find(_ => !_.approved);
+					if (unapprovedParticipants) {
+						return false;
+					}
+					const approvedParticipants = pr.body.participants.nodes.filter(
+						_ => _.approved && _.state === "approved"
+					);
+					const isApproved = participantLength == approvedParticipants.length;
+					return isApproved;
+				}
+				return false;
+			};
+
+			//check if changes are requested or not
+			const isChangesRequested = () => {
+				if (pr.body.participants?.nodes) {
+					const changesRequestedParticipants = pr.body.participants.nodes.filter(
+						_ => !_.approved && _.state === "changes_requested"
+					);
+					if (changesRequestedParticipants) {
+						return true;
+					}
+				}
+				return false;
+			};
+
 			response = {
 				viewer: viewer,
 				repository: {
@@ -990,6 +1025,8 @@ export class BitbucketProvider
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
+						isApproved: isPRApproved(),
+						isRequested: isChangesRequested(),
 					} as any, //TODO: make this work
 				},
 			};
@@ -1150,6 +1187,9 @@ export class BitbucketProvider
 			case "REQUEST_CHANGES":
 				reviewType = "request-changes";
 				break;
+			case "CHANGES_REQUESTED":
+				reviewType = "request-changes";
+				break;
 			case "UNAPPROVE":
 				reviewType = "unapprove";
 				break;
@@ -1157,44 +1197,29 @@ export class BitbucketProvider
 				// code block
 				reviewType = "approve";
 		}
-		//on the front end:
-		//check if this person has already approved or not,
-		//if not approved already, do approved -call submitReview
-		//else if approved, do an unapprove - call submitReview
-		//check if merged already or not
-		//if not merged already, do merge stuff -call submitReview -merge function?
-		//else if merged, don't do anything
-		//check if this person has already done request-changes
-		//if yes, don't do anything
-		//else do request-changes -call submitReview
 
 		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
 
-		const response = await this.post<BitbucketSubmitReviewRequest, any>(
-			`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`,
-			payload
-		);
+		let response: any = {}; //TODO: fix this any!
 
-		//to be updated in directives:
-		//For approve/unapprove:
-		const approveFlag = response.body.approved; //either false or true
-		const reviewState = response.body.state; // either "approve", "changes_requested", or null
+		if (request.eventType === "CHANGES_REQUESTED") {
+			response = await this.delete<BitbucketSubmitReviewRequest>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`
+			);
+			//TODO: bitbucket doesn't return anything on this delete ...
+		} else {
+			response = await this.post<BitbucketSubmitReviewRequest, any>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`,
+				payload
+			);
+		}
+
+		const approveFlag = response.body.approved || false; //either false or true
+		const reviewState = response.body.state || null; // either "approve", "changes_requested", or null
 		const username = response.body.user.display_name;
 		const updatedAt = response.body.participated_on;
 		const userId = response.body.uuid;
-		// const mergeState = response.body.
-		// the approve boolean flag on the pr.participants
-		// the username and participated_on for whoever did the thing
 
-		//For  merge:
-		// the merge info on the pr.state(OPEN, MERGED, DECLINED, SUPERSEDED)
-		// who did the merge (username) & participated_on
-
-		//For request-changes:
-		// the state on participant (approved/changes_requested/null)
-		// who did the request-changes and when
-
-		// TODO change the type based on approve/unapprove/request-changes
 		let approveType = "";
 		if (reviewType === "approve") {
 			approveType = "addApprovedBy";
@@ -1202,6 +1227,8 @@ export class BitbucketProvider
 			approveType = "removeApprovedBy";
 		} else if (reviewType === "request-changes") {
 			approveType = "reviewSubmitted";
+		} else if (request.eventType === "CHANGES_REQUESTED") {
+			approveType = "removePendingReview";
 		}
 
 		return this.handleResponse(request.pullRequestId, {
@@ -1218,7 +1245,9 @@ export class BitbucketProvider
 							? "addApprovedBy"
 							: reviewType === "unapprove"
 							? "removeApprovedBy"
-							: "reviewSubmitted",
+							: reviewType === "reviewSubmitted"
+							? "reviewSubmitted"
+							: "removePendingReview",
 					data: {
 						type: response.body.type,
 						user: {

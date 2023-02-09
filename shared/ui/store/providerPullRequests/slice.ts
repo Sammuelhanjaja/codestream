@@ -866,6 +866,14 @@ const providerPullRequestsSlice = createSlice({
 									pr.participants.nodes[item] = directive.data[item];
 								}
 							}
+						} else if (directive.type === "removePendingReview") {
+							//removing the requested changes
+							const user_id = directive.data.user.uuid;
+							for (const item in directive.data) {
+								if (pr.participants.nodes.includes(user_id)) {
+									pr.participants.nodes[item] = directive.data[item];
+								}
+							}
 						} else if (directive.type === "addNode") {
 							pr.comments = pr.comments || [];
 							pr.comments.push(directive.data);
