@@ -51,6 +51,7 @@ import {
 	ThirdPartyProviderSupportsPullRequests,
 } from "./provider";
 import { ThirdPartyIssueProviderBase } from "./thirdPartyIssueProviderBase";
+import { toUtcIsoNow } from "@codestream/utils/system/date";
 
 interface BitbucketRepo {
 	uuid: string;
@@ -970,6 +971,38 @@ export class BitbucketProvider
 				return false;
 			};
 
+			const mapping = {
+				approve: { icon: "thumbsup", text: "Unapprove", requestedState: "unapprove" },
+				unapprove: { icon: "thumbsdown", text: "Approve", requestedState: "approve" },
+				"request-changes": {
+					icon: "question",
+					text: "Request Changes",
+					requestedState: "request-changes",
+				},
+				"changes-requested": {
+					icon: "question",
+					text: "Changes Requested",
+					requestedState: "changes-requested", //this really mean un-request changes (bitbucket button on their UI says changes-requested)
+				},
+			};
+
+			let thing1;
+			let thing2;
+
+			if (!isChangesRequested() && !isPRApproved()) {
+				// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
+				thing1 = mapping["unapprove"];
+				thing2 = mapping["request-changes"];
+			} else if (isChangesRequested() && !isPRApproved()) {
+				//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
+				thing1 = mapping["unapprove"];
+				thing2 = mapping["changes-requested"];
+			} else if (isPRApproved()) {
+				//it's approved, therefore there cannot be any request changes
+				thing1 = mapping["approve"];
+				thing2 = mapping["request-changes"];
+			}
+
 			response = {
 				viewer: viewer,
 				repository: {
@@ -1027,6 +1060,8 @@ export class BitbucketProvider
 						viewer: viewer,
 						isApproved: isPRApproved(),
 						isRequested: isChangesRequested(),
+						approvalStatus: thing1,
+						requestStatus: thing2,
 					} as any, //TODO: make this work
 				},
 			};
@@ -1171,104 +1206,80 @@ export class BitbucketProvider
 		eventType: string;
 		// used with old servers
 		pullRequestReviewId?: string;
+		userId: string;
 	}): Promise<Directives> {
 		const payload: BitbucketSubmitReviewRequest = {
 			type: request.eventType,
-			// message: request.text,
 		};
 		Logger.log(`commenting:pullrequestsubmitreview`, {
 			request: request,
 			payload: payload,
 		});
 
-		let reviewType;
-		//switch statement for variable for reviewType
-		switch (request.eventType) {
-			case "REQUEST_CHANGES":
-				reviewType = "request-changes";
-				break;
-			case "CHANGES_REQUESTED":
-				reviewType = "request-changes";
-				break;
-			case "UNAPPROVE":
-				reviewType = "unapprove";
-				break;
-			default:
-				// code block
-				reviewType = "approve";
-		}
-
 		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
 
 		let response: any = {}; //TODO: fix this any!
 
-		if (request.eventType === "CHANGES_REQUESTED") {
+		//TODO: try-catch on the delete
+		if (request.eventType === "changes-requested") {
+			//to un-request changes you have to run a delete
 			response = await this.delete<BitbucketSubmitReviewRequest>(
-				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/$request-changes`
 			);
-			//TODO: bitbucket doesn't return anything on this delete ...
+			//bitbucket doesn't return anything on this delete
+			return this.handleResponse(request.pullRequestId, {
+				directives: [
+					{
+						type: "updatePullRequest",
+						data: {
+							updatedAt: Dates.toUtcIsoNow(),
+						},
+					},
+					{
+						type: (request.eventType = "removePendingReview"),
+						data: {
+							user: {
+								uuid: request.userId,
+							},
+							state: "null",
+							participated_on: toUtcIsoNow(),
+						},
+					},
+				],
+			});
 		} else {
 			response = await this.post<BitbucketSubmitReviewRequest, any>(
-				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${reviewType}`,
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${request.eventType}`,
 				payload
 			);
-		}
 
-		const approveFlag = response.body.approved || false; //either false or true
-		const reviewState = response.body.state || null; // either "approve", "changes_requested", or null
-		const username = response.body.user.display_name;
-		const updatedAt = response.body.participated_on;
-		const userId = response.body.uuid;
-
-		let approveType = "";
-		if (reviewType === "approve") {
-			approveType = "addApprovedBy";
-		} else if (reviewType === "unapprove") {
-			approveType = "removeApprovedBy";
-		} else if (reviewType === "request-changes") {
-			approveType = "reviewSubmitted";
-		} else if (request.eventType === "CHANGES_REQUESTED") {
-			approveType = "removePendingReview";
-		}
-
-		return this.handleResponse(request.pullRequestId, {
-			directives: [
-				{
-					type: "updatePullRequest",
-					data: {
-						updatedAt: Dates.toUtcIsoNow(),
-					},
-				},
-				{
-					type:
-						reviewType === "approve"
-							? "addApprovedBy"
-							: reviewType === "unapprove"
-							? "removeApprovedBy"
-							: reviewType === "reviewSubmitted"
-							? "reviewSubmitted"
-							: "removePendingReview",
-					data: {
-						type: response.body.type,
-						user: {
-							uuid: userId,
-							display_name: username,
-							links: {
-								avatar: {
-									href: {
-										avatarUrl: response.body.user.links.avatar.href,
-									},
-								},
-							},
+			return this.handleResponse(request.pullRequestId, {
+				directives: [
+					{
+						type: "updatePullRequest",
+						data: {
+							updatedAt: Dates.toUtcIsoNow(),
 						},
-						role: response.body.role,
-						approved: approveFlag,
-						state: reviewState,
-						participated_on: updatedAt,
 					},
-				},
-			],
-		});
+					{
+						type:
+							request.eventType === "approve"
+								? "addApprovedBy"
+								: request.eventType === "unapprove"
+								? "removeApprovedBy"
+								: "reviewSubmitted", //request changes
+						data: {
+							user: {
+								uuid: response.body.uuid,
+							},
+							approved: response.body.approved,
+							state: response.body.state,
+							participated_on: response.body.participated_on,
+						},
+					},
+				],
+			});
+		}
 	}
 
 	async getPullRequestFilesChanged(request: {
