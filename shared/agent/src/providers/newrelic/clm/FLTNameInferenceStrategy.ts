@@ -4,51 +4,36 @@ import {
 	FileLevelTelemetrySampleSize,
 	GetFileLevelTelemetryRequest,
 } from "@codestream/protocols/agent";
-import { LanguageId } from "./clmManager";
 import { Logger } from "../../../logger";
+import { FLTStrategy } from "./FLTStrategy";
+import { INewRelicProvider } from "../../newrelic";
 
 interface NameValue {
 	name: string;
 	value: number;
 }
 
-interface Anomaly {
-	name: string;
-	oldDuration: number;
-	newDuration: number;
-	ratio: number;
-}
-
-export class CLMNameInferenceStrategy {
+export abstract class FLTNameInferenceStrategy implements FLTStrategy {
 	constructor(
-		private entityGuid: string,
-		private accountId: number,
-		private _runNrql: <T>(accountId: number, nrql: string, timeout: number) => Promise<T[]>
+		protected entityGuid: string,
+		protected accountId: number,
+		protected relativeFilePath: string,
+		protected request: GetFileLevelTelemetryRequest,
+		protected provider: INewRelicProvider
 	) {}
 
-	async execute(
-		languageId: LanguageId,
-		relativeFilePath: string,
-		request: GetFileLevelTelemetryRequest,
-		resolutionMethod: "filePath" | "locator" | "hybrid"
-	): Promise<
-		| {
-				averageDuration: FileLevelTelemetryAverageDuration[];
-				errorRate: FileLevelTelemetryErrorRate[];
-				sampleSize: FileLevelTelemetrySampleSize[];
-		  }
-		| undefined
-	> {
-		if (languageId != "java") {
-			return;
-		}
+	abstract getMetricLookup(): string;
+	abstract getSpanLookup(): string;
+	abstract extractSymbol(metricName: string): {
+		namespace?: string;
+		className?: string;
+		functionName: string;
+	};
 
+	async execute() {
 		try {
-			// await this.init();
-			// support multiple namespaces - this will move to the java subclass
-			const namespace = (request.locator?.namespaces || [])[0];
-			const metricLookup = `metricTimesliceName LIKE '%/${namespace}/%'`;
-			const spanLookup = `name LIKE '%/${namespace}/%'`;
+			const metricLookup = this.getMetricLookup();
+			const spanLookup = this.getSpanLookup();
 			const sampleSizesSpan = await this.getSampleSizeSpan(spanLookup);
 			const sampleSizesMetric = await this.getSampleSizeMetric(metricLookup);
 			const averageDurationsSpan = await this.getAverageDurationSpan(spanLookup);
@@ -112,39 +97,15 @@ export class CLMNameInferenceStrategy {
 			};
 		} catch (ex) {
 			Logger.error(ex);
-			return undefined;
+			return {
+				averageDuration: [],
+				errorRate: [],
+				sampleSize: [],
+			};
 		}
 	}
 
 	private readonly _timeFrame = "SINCE 30 minutes AGO";
-
-	getCommonRoots(namespaces: string[]): string[] {
-		const namespaceTree = new Map<string, any>();
-		for (const namespace of namespaces) {
-			const parts = namespace.split(".");
-			let node: Map<string, any> = namespaceTree;
-			for (const part of parts) {
-				if (!node.has(part)) {
-					node.set(part, new Map<string, any>());
-				}
-				node = node.get(part);
-			}
-		}
-
-		const commonRoots: string[] = [];
-		namespaceTree.forEach((value: any, key: string) => {
-			const parts = [key];
-			let node: Map<string, any> = value;
-			while (node.size === 1) {
-				const onlyChild = Array.from(node.entries())[0];
-				parts.push(onlyChild[0]);
-				node = onlyChild[1];
-			}
-			commonRoots.push(parts.join("."));
-		});
-
-		return commonRoots;
-	}
 
 	private async getAverageDurationSpan(
 		lookup: string
@@ -245,28 +206,6 @@ export class CLMNameInferenceStrategy {
 	}
 
 	private runNrql<T>(nrql: string): Promise<T[]> {
-		return this._runNrql(this.accountId, nrql, 200);
-	}
-
-	private extractNamespace(spanName: string): string | undefined {
-		const parts = spanName.split("/");
-		const method = parts[parts.length - 1];
-		const clazz = parts[parts.length - 2];
-		return clazz;
-	}
-
-	private extractSymbol(spanName: string): {
-		namespace?: string;
-		className?: string;
-		functionName: string;
-	} {
-		const parts = spanName.split("/");
-		const method = parts[parts.length - 1];
-		const clazz = parts[parts.length - 2];
-		return {
-			namespace: clazz, // what is this?
-			className: clazz,
-			functionName: method,
-		};
+		return this.provider.runNrql(this.accountId, nrql, 200);
 	}
 }
