@@ -352,7 +352,7 @@ export const completeSignup =
 
 		const providerName = extra.provider
 			? ProviderNames[extra.provider.toLowerCase()] || extra.provider
-			: "CodeStream";
+			: "Email";
 		HostApi.instance.track("Signup Completed", {
 			"Signup Type": extra.byDomain ? "Domain" : extra.createdTeam ? "Organic" : "Viral",
 			"Auth Provider": providerName,
@@ -400,7 +400,7 @@ export const completeAcceptInvite =
 
 		const providerName = extra.provider
 			? ProviderNames[extra.provider.toLowerCase()] || extra.provider
-			: "CodeStream";
+			: "Email";
 		HostApi.instance.track("Signup Completed", {
 			"Signup Type": extra.byDomain ? "Domain" : extra.createdTeam ? "Organic" : "Viral",
 			"Auth Provider": providerName,
@@ -417,9 +417,7 @@ export const validateSignup =
 			errorGroupGuid: context.pendingProtocolHandlerQuery?.errorGroupGuid,
 		});
 
-		const providerName = provider
-			? ProviderNames[provider.toLowerCase()] || provider
-			: "CodeStream";
+		const providerName = provider ? ProviderNames[provider.toLowerCase()] || provider : "Email";
 
 		if (isLoginFailResponse(response)) {
 			if (session.inMaintenanceMode && response.error !== LoginResult.MaintenanceMode) {

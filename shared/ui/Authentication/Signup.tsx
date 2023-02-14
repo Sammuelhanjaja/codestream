@@ -281,6 +281,7 @@ export const Signup = (props: Props) => {
 			const sendTelemetry = () => {
 				HostApi.instance.track("Account Created", {
 					email: email,
+					"Auth Provider": "Email",
 					"Git Email Match?": email === scmEmail,
 					Source: derivedState.pendingProtocolHandlerQuerySource,
 				});
