@@ -1,367 +1,684 @@
 "use strict";
 
-import { describe, expect, it } from "@jest/globals";
-
-import { NewRelicProvider } from "../../../../src/providers/newrelic";
-import {
-	GraphqlNrqlError,
-	GraphqlNrqlErrorResponse,
-	GraphqlNrqlTimeoutError,
-	isGetFileLevelTelemetryResponse,
-} from "../../../../src/providers/newrelic.types";
+import { NewRelicProvider } from "../../../../../src/providers/newrelic";
 import { CSMe } from "@codestream/protocols/api";
+import { Dictionary } from "lodash";
 import {
 	Entity,
 	GetEntityCountResponse,
-	GetReposScmResponse,
 	ObservabilityRepo,
 	RelatedEntity,
 	RelatedEntityByRepositoryGuidsResult,
 } from "@codestream/protocols/agent";
-import { MetricQueryRequest, Span } from "../../../../src/providers/newrelic/newrelic.types";
+import {
+	MetricQueryRequest,
+	MetricTimeslice,
+	Span,
+} from "../../../../../src/providers/newrelic/newrelic.types";
+import { FLTSpanLookupStrategy } from "../../../../../src/providers/newrelic/clm/FLTSpanLookupStrategy";
 
-describe("NewRelicProvider", () => {
-	it("tryFormatStack", async () => {
-		const data = {
-			crash: null,
-			entityType: "MOBILE_APPLICATION_ENTITY",
-			exception: {
-				stackTrace: {
-					frames: [
+describe("FLTSpanLookupStrategy", () => {
+	describe("addMethodName", () => {
+		it("parses python function name", async () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"python",
+				"/foo/bar.py",
+				{
+					fileUri: "/foo/bar.py",
+					languageId: "python",
+				},
+				"locator",
+				provider
+			);
+			const results = strategy.addMethodName(
+				{
+					"Function/routes.app:hello_world": [
 						{
-							filepath: "Logger.kt",
-							formatted: "com.newrelic.common.Logger",
-							line: 67,
-							name: "wrapToBeTraceable",
+							traceId: "123",
+							transactionId: "abc",
+							"code.lineno": 1,
+							"code.namespace": null,
+							"transaction.name": "a",
+							"code.function": "hello_world",
 						},
+					],
+					"Function/routes.app:MyClass.my_method": [
 						{
-							filepath: "Logger.kt",
-							formatted: "com.newrelic.common.Logger",
-							line: 28,
-							name: "logError",
-						},
-						{
-							filepath: "Logger.kt",
-							formatted: "com.newrelic.common.Logger",
-							line: 18,
-							name: "logError$default",
-						},
-						{
-							filepath: "RefreshTokenQuery.kt",
-							formatted: "com.newrelic.login.api.query.RefreshTokenQuery",
-							line: 62,
-							name: "refreshToken",
-						},
-						{
-							formatted: "com.newrelic.login.api.query.RefreshTokenQuery$refreshToken$1",
-							line: 15,
-							name: "invokeSuspend",
-						},
-						{
-							filepath: "ContinuationImpl.kt",
-							formatted: "kotlin.coroutines.jvm.internal.BaseContinuationImpl",
-							line: 33,
-							name: "resumeWith",
-						},
-						{
-							filepath: "DispatchedTask.kt",
-							formatted: "kotlinx.coroutines.DispatchedTask",
-							line: 104,
-							name: "run",
-						},
-						{
-							filepath: "Handler.java",
-							formatted: "android.os.Handler",
-							line: 883,
-							name: "handleCallback",
-						},
-						{
-							filepath: "Handler.java",
-							formatted: "android.os.Handler",
-							line: 100,
-							name: "dispatchMessage",
-						},
-						{
-							filepath: "Looper.java",
-							formatted: "android.os.Looper",
-							line: 224,
-							name: "loop",
-						},
-						{
-							filepath: "ActivityThread.java",
-							formatted: "android.app.ActivityThread",
-							line: 7561,
-							name: "main",
-						},
-						{
-							filepath: "Method.java",
-							formatted: "java.lang.reflect.Method",
-							line: -2,
-							name: "invoke",
-						},
-						{
-							filepath: "RuntimeInit.java",
-							formatted: "com.android.internal.os.RuntimeInit$MethodAndArgsCaller",
-							line: 539,
-							name: "run",
-						},
-						{
-							filepath: "ZygoteInit.java",
-							formatted: "com.android.internal.os.ZygoteInit",
-							line: 995,
-							name: "main",
+							traceId: "456",
+							transactionId: "def",
+							"code.lineno": 4,
+							"code.namespace": null,
+							"transaction.name": "d",
+							"code.function": "my_method",
 						},
 					],
 				},
-			},
-			name: "Thing for Android - Production",
-		};
+				[
+					{
+						facet: "Function/routes.app:hello_world",
+						averageDuration: 3.2,
+						metricTimesliceName: "Function/routes.app:hello_world",
+					},
+					{
+						facet: "Function/routes.app:MyClass.my_method",
+						averageDuration: 3.2,
+						metricTimesliceName: "Function/routes.app:MyClass.my_method",
+					},
+				]
+			);
 
-		const results = new NewRelicProvider({} as any, {} as any).tryFormatStack(
-			data.entityType,
-			data.exception
-		);
-
-		expect(results?.stackTrace.frames.map(_ => _.formatted)).toEqual([
-			"\tcom.newrelic.common.Logger(Logger.kt:67)",
-			"\tcom.newrelic.common.Logger(Logger.kt:28)",
-			"\tcom.newrelic.common.Logger(Logger.kt:18)",
-			"\tcom.newrelic.login.api.query.RefreshTokenQuery(RefreshTokenQuery.kt:62)",
-			"\tcom.newrelic.login.api.query.RefreshTokenQuery$refreshToken$1",
-			"\tkotlin.coroutines.jvm.internal.BaseContinuationImpl(ContinuationImpl.kt:33)",
-			"\tkotlinx.coroutines.DispatchedTask(DispatchedTask.kt:104)",
-			"\tandroid.os.Handler(Handler.java:883)",
-			"\tandroid.os.Handler(Handler.java:100)",
-			"\tandroid.os.Looper(Looper.java:224)",
-			"\tandroid.app.ActivityThread(ActivityThread.java:7561)",
-			"\tjava.lang.reflect.Method",
-			"\tcom.android.internal.os.RuntimeInit$MethodAndArgsCaller(RuntimeInit.java:539)",
-			"\tcom.android.internal.os.ZygoteInit(ZygoteInit.java:995)",
-		]);
-	});
-
-	xit("getFileLevelTelemetry", async () => {
-		const serviceLocatorStub = {
-			git: {
-				getRepositoryByFilePath: function (path: string) {
-					return {
-						id: "123",
-						path: "whatever",
-						getWeightedRemotesByStrategy: function () {
-							return [
-								{
-									name: "foo",
-									repoPath: "foo/bar",
-									remotes: [
-										{
-											rawUrl: "https://",
-										},
-									],
-								},
-							];
-						},
-					};
+			expect(results).toEqual([
+				{
+					averageDuration: 3.2,
+					className: undefined,
+					facet: "Function/routes.app:hello_world",
+					metricTimesliceName: "Function/routes.app:hello_world",
+					namespace: null,
+					metadata: {
+						"code.lineno": 1,
+						traceId: "123",
+						transactionId: "abc",
+						"code.namespace": null,
+						"code.function": "hello_world",
+					},
+					functionName: "hello_world",
 				},
-			},
-			users: {
-				getMe: function () {
-					return {
-						id: "1234",
-					};
+				{
+					averageDuration: 3.2,
+					facet: "Function/routes.app:MyClass.my_method",
+					className: "MyClass",
+					metricTimesliceName: "Function/routes.app:MyClass.my_method",
+					namespace: null,
+					metadata: {
+						"code.lineno": 4,
+						traceId: "456",
+						transactionId: "def",
+						"code.namespace": null,
+						"code.function": "my_method",
+					},
+					functionName: "my_method",
 				},
-			},
-			session: {
-				newRelicApiUrl: "",
-			},
-		} as any;
-		const provider = new NewRelicProviderStub({} as any, {} as any);
-		provider.sessionServiceContainer = serviceLocatorStub;
-
-		const results = await provider.getFileLevelTelemetry({
-			fileUri: "/foo.py",
-			languageId: "python",
-			options: {
-				includeAverageDuration: true,
-				includeErrorRate: true,
-				includeThroughput: true,
-			},
+			]);
 		});
 
-		if (!isGetFileLevelTelemetryResponse(results)) {
-			throw Error(results?.error?.type);
-		}
-
-		expect(results?.sampleSize?.length).toEqual(2);
-		expect(results?.sampleSize?.map(_ => _.functionName)).toEqual(["error", "hello_world"]);
-	});
-
-	xit("getFileLevelTelemetry2", async () => {
-		const serviceLocatorStub = {
-			git: {
-				getRepositoryByFilePath: function (path: string) {
-					return {
-						id: "123",
-						path: "whatever",
-						getWeightedRemotesByStrategy: function () {
-							return [
-								{
-									name: "foo",
-									repoPath: "foo/bar",
-									remotes: [
-										{
-											rawUrl: "https://",
-										},
-									],
-								},
-							];
+		it("maps python code.namespace", async () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"python",
+				"/foo/bar.py",
+				{
+					fileUri: "/foo/bar.py",
+					languageId: "python",
+				},
+				"locator",
+				provider
+			);
+			const results = strategy.addMethodName(
+				{
+					"Carrot/foo_bar.system.tasks.bill_credit_payment_item": [
+						{
+							"code.filepath": "/app/foo_bar/system/tasks.py",
+							"code.function": "bill_credit_payment_item",
+							"code.lineno": 27,
+							"code.namespace": "foo_bar.system.tasks",
+							timestamp: 1647628200280,
 						},
-					};
+					],
 				},
-			},
-			users: {
-				getMe: function () {
-					return {
-						id: "1234",
-					};
-				},
-			},
-			session: {
-				newRelicApiUrl: "",
-			},
-		} as any;
-		const provider = new NewRelicProviderStub2({} as any, {} as any);
-		provider.sessionServiceContainer = serviceLocatorStub;
+				[
+					{
+						facet: "OtherTransaction/Carrot/foo_bar.system.tasks.bill_credit_payment_item",
+						averageDuration: 3.2,
+						metricTimesliceName:
+							"OtherTransaction/Carrot/foo_bar.system.tasks.bill_credit_payment_item",
+					},
+				]
+			);
 
-		const results = await provider.getFileLevelTelemetry({
-			fileUri: "/foo2.py",
-			languageId: "python",
-			options: {
-				includeAverageDuration: true,
-				includeErrorRate: true,
-				includeThroughput: true,
-			},
+			expect(results).toEqual([
+				{
+					averageDuration: 3.2,
+					className: undefined,
+					facet: "OtherTransaction/Carrot/foo_bar.system.tasks.bill_credit_payment_item",
+					metricTimesliceName:
+						"OtherTransaction/Carrot/foo_bar.system.tasks.bill_credit_payment_item",
+					namespace: "foo_bar.system.tasks",
+					metadata: {
+						"code.lineno": 27,
+						"code.namespace": "foo_bar.system.tasks",
+						traceId: undefined,
+						transactionId: undefined,
+						"code.function": "bill_credit_payment_item",
+					},
+					functionName: "bill_credit_payment_item",
+				},
+			]);
 		});
 
-		if (!isGetFileLevelTelemetryResponse(results)) {
-			throw Error(results?.error?.type);
-		}
-
-		expect(results?.sampleSize?.length).toEqual(1);
-		expect(results?.sampleSize?.map(_ => _.functionName)).toEqual([
-			"create_bill_credit_payment_thing",
-		]);
-	});
-
-	it("generateEntityQueryStatements", async () => {
-		const provider = new NewRelicProvider({} as any, {} as any);
-		expect(provider.generateEntityQueryStatement("foo-bar_baz")).toEqual(
-			"name LIKE '%foo-bar_baz%'"
-		);
-	});
-
-	it("getObservabilityRepos", async () => {
-		const serviceLocatorStub = {
-			scm: {
-				getRepos: function (): Promise<GetReposScmResponse> {
-					return new Promise(resolve => {
-						resolve({
-							repositories: [
-								{
-									id: "123",
-									path: "",
-									folder: { uri: "", name: "repo" },
-									remotes: [
-										{
-											repoPath: "/Users/johndoe/code/johndoe_foo-account-persister",
-											name: "origin",
-											domain: "yoursourcecode.net",
-											path: "johndoe/foo-account-persister",
-											rawUrl: "git@yoursourcecode.net:johndoe/foo-account-persister.git",
-											webUrl: "//yoursourcecode.net/johndoe/foo-account-persister",
-										},
-										{
-											repoPath: "/Users/johndoe/code/johndoe_foo-account-persister",
-											name: "upstream",
-											domain: "yoursourcecode.net",
-											path: "biz-enablement/foo-account-persister",
-											rawUrl: "git@yoursourcecode.net:biz-enablement/foo-account-persister.git",
-											webUrl: "//yoursourcecode.net/biz-enablement/foo-account-persister",
-										},
-									],
-								},
-							],
-						});
-					});
-				},
-			},
-			session: {
-				newRelicApiUrl: "https://api.newrelic.com",
-			},
-		} as any;
-
-		const provider = new NewRelicProviderStub2({} as any, {} as any);
-		provider.sessionServiceContainer = serviceLocatorStub;
-
-		const results = await provider.getObservabilityRepos({});
-
-		expect(results?.repos?.length).toEqual(1);
-		expect(results?.repos![0].entityAccounts.length).toEqual(1);
-		expect(results?.repos![0].repoRemote).toEqual(
-			"git@yoursourcecode.net:biz-enablement/foo-account-persister.git"
-		);
-	});
-
-	it("throws GraphqlNrqlTimeoutError for matching response", () => {
-		const provider = new NewRelicProvider({} as any, {} as any);
-		const responseBody: GraphqlNrqlErrorResponse = {
-			errors: [
+		it("handles ruby controller", () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"ruby",
+				"/foo/bar.rb",
 				{
-					extensions: {
-						errorClass: "TIMEOUT",
-						nrOnly: {},
-					},
-					path: ["path"],
-					message: "error happened",
+					fileUri: "/foo/bar.rb",
+					languageId: "ruby",
 				},
-			],
-		};
-		// const error = expect(() => provider.checkGraphqlErrors(responseBody)).toThrow(GraphqlNrqlTimeoutError);
-		try {
-			provider.checkGraphqlErrors(responseBody);
-		} catch (e: unknown) {
-			expect(e instanceof GraphqlNrqlTimeoutError).toBe(true);
-			const error = e as GraphqlNrqlTimeoutError;
-			expect(error.errors.length).toBe(1);
-			expect(error.errors[0].message).toBe("error happened");
-			return;
-		}
-		// TODO use fail after fixed https://github.com/facebook/jest/issues/11698
-		throw new Error("GraphqlNrqlTimeoutError not thrown");
-	});
+				"locator",
+				provider
+			);
+			const groupedByTransactionName = {
+				"Controller/agents/show": [
+					{
+						"code.lineno": 16,
+						"code.namespace": "AgentsController",
+						"code.function": "show",
+						name: "Controller/agents/show",
+						timestamp: 1651192630939,
+						traceId: "289d61d8564a72ef01bcea7b76b95ca4",
+						"transaction.name": null,
+						transactionId: "5195e0f31cf1fce4",
+					},
+				],
+				"Controller/agents/create": [
+					{
+						"code.lineno": 16,
+						"code.namespace": "AgentsController",
+						"code.function": "create",
+						name: "Controller/agents/create",
+						timestamp: 1651192612236,
+						traceId: "67e121ac35ff1cbe191fd1da94e50012",
+						"transaction.name": null,
+						transactionId: "2ac9f995b004df82",
+					},
+				],
+				"Controller/agents/destroy": [
+					{
+						"code.lineno": 55,
+						"code.namespace": "AgentsController",
+						"code.function": "destroy",
+						name: "Controller/agents/destroy",
+						timestamp: 1651192599849,
+						traceId: "063c6612799ad82201ee739f4213ff39",
+						"transaction.name": null,
+						transactionId: "43d95607af1fa91f",
+					},
+				],
+			};
 
-	it("throws GraphqlNrqlError for other gql errors", () => {
-		const provider = new NewRelicProvider({} as any, {} as any);
-		const responseBody: GraphqlNrqlErrorResponse = {
-			errors: [
+			const metricTimesliceNames: MetricTimeslice[] = [
 				{
-					extensions: {
-						errorClass: "SOMETHING_BAD",
-						nrOnly: {},
-					},
-					path: ["path"],
+					facet: "Controller/agents/create",
+					metricTimesliceName: "Controller/agents/create",
+					requestsPerMinute: 22.2,
 				},
-			],
-		};
-		try {
-			provider.checkGraphqlErrors(responseBody);
-		} catch (e: unknown) {
-			expect(e instanceof GraphqlNrqlError).toBe(true);
-			const error = e as GraphqlNrqlTimeoutError;
-			expect(error.errors.length).toBe(1);
-			return;
-		}
-		// TODO use fail after fixed https://github.com/facebook/jest/issues/11698
-		throw new Error("GraphqlNrqlError not thrown");
+				{
+					facet: "Controller/agents/show",
+					metricTimesliceName: "Controller/agents/show",
+					requestsPerMinute: 22.2,
+				},
+				{
+					facet: "Controller/agents/destroy",
+					metricTimesliceName: "Controller/agents/destroy",
+					requestsPerMinute: 22.23,
+				},
+			];
+
+			const results = strategy.addMethodName(groupedByTransactionName, metricTimesliceNames);
+			expect(results).toEqual([
+				{
+					className: "AgentsController",
+					facet: "Controller/agents/create",
+					metricTimesliceName: "Controller/agents/create",
+					namespace: "AgentsController",
+					requestsPerMinute: 22.2,
+					metadata: {
+						"code.lineno": 16,
+						traceId: "67e121ac35ff1cbe191fd1da94e50012",
+						transactionId: "2ac9f995b004df82",
+						"code.namespace": "AgentsController",
+						"code.function": "create",
+					},
+					functionName: "create",
+				},
+				{
+					className: "AgentsController",
+					facet: "Controller/agents/show",
+					metricTimesliceName: "Controller/agents/show",
+					requestsPerMinute: 22.2,
+					namespace: "AgentsController",
+					metadata: {
+						"code.lineno": 16,
+						traceId: "289d61d8564a72ef01bcea7b76b95ca4",
+						transactionId: "5195e0f31cf1fce4",
+						"code.namespace": "AgentsController",
+						"code.function": "show",
+					},
+					functionName: "show",
+				},
+				{
+					className: "AgentsController",
+					facet: "Controller/agents/destroy",
+					metricTimesliceName: "Controller/agents/destroy",
+					requestsPerMinute: 22.23,
+					namespace: "AgentsController",
+					metadata: {
+						"code.lineno": 55,
+						traceId: "063c6612799ad82201ee739f4213ff39",
+						transactionId: "43d95607af1fa91f",
+						"code.namespace": "AgentsController",
+						"code.function": "destroy",
+					},
+					functionName: "destroy",
+				},
+			]);
+			// console.info("result", JSON.stringify(result, null, 2));
+		});
+
+		it("handles ruby ActiveJob", () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"ruby",
+				"/foo/bar.rb",
+				{
+					fileUri: "/foo/bar.rb",
+					languageId: "ruby",
+				},
+				"locator",
+				provider
+			);
+			const groupedByTransactionName = {
+				"MessageBroker/ActiveJob::Async/Queue/Produce/Named/default": [
+					{
+						"code.filepath": "/usr/src/app/app/jobs/notifier_job.rb",
+						"code.function": "perform",
+						"code.lineno": 8,
+						"code.namespace": "NotifierJob",
+						name: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+						timestamp: 1652110848694,
+						traceId: "2d2a1cfae193394b121427ff11df5fc5",
+						"transaction.name": null,
+						transactionId: "5154409dd464aad1",
+					},
+					{
+						"code.filepath": "/usr/src/app/app/jobs/notifier_job.rb",
+						"code.function": "perform",
+						"code.lineno": 8,
+						"code.namespace": "NotifierJob",
+						name: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+						timestamp: 1652110782764,
+						traceId: "84ea3aebfc980a997ae65beefad3a208",
+						"transaction.name": null,
+						transactionId: "d120d392b5ab777f",
+					},
+				],
+			};
+
+			const metricTimesliceNames: MetricTimeslice[] = [
+				{
+					facet: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+					requestsPerMinute: 24.1,
+					metricTimesliceName: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+				},
+			];
+
+			const results = strategy.addMethodName(groupedByTransactionName, metricTimesliceNames);
+			expect(results).toEqual([
+				{
+					className: "NotifierJob",
+					facet: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+					metricTimesliceName: "MessageBroker/ActiveJob::Async/Queue/Produce/Named/default",
+					namespace: "NotifierJob",
+					requestsPerMinute: 24.1,
+					metadata: {
+						"code.lineno": 8,
+						traceId: "2d2a1cfae193394b121427ff11df5fc5",
+						transactionId: "5154409dd464aad1",
+						"code.namespace": "NotifierJob",
+						"code.function": "perform",
+					},
+					functionName: "perform",
+				},
+			]);
+		});
+
+		it("parses ruby modules:class:functions syntax", () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"ruby",
+				"/foo/bar.rb",
+				{
+					fileUri: "/foo/bar.rb",
+					languageId: "ruby",
+				},
+				"locator",
+				provider
+			);
+			const groupedByTransactionName: Dictionary<Span[]> = {
+				"Nested/OtherTransaction/Background/Custom::Helpers/custom_class_method": [
+					{
+						"code.lineno": "11",
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_class_method",
+						name: "OtherTransaction/Background/Custom::Helpers/custom_class_method",
+						timestamp: 1651700387308,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						"transaction.name": null,
+						transactionId: "ab968a3e203d2451",
+					},
+					{
+						"code.lineno": "11",
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_class_method",
+						name: "OtherTransaction/Background/Custom::Helpers/custom_class_method",
+						timestamp: 1651699137312,
+						traceId: "ffe331a263b4cc7dd7080ed9f2f5faba",
+						"transaction.name": null,
+						transactionId: "a0627ed02eb626c0",
+					},
+				],
+				"Custom/CLMtesting/InstanceMethod": [
+					{
+						"code.lineno": 33,
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_instance_method_too",
+						name: "Custom/CLMtesting/InstanceMethod",
+						timestamp: 1651700387308,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						"transaction.name": null,
+						transactionId: "ab968a3e203d2451",
+					},
+					{
+						"code.lineno": 33,
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_instance_method_too",
+						name: "Custom/CLMtesting/InstanceMethod",
+						timestamp: 1651700356133,
+						traceId: "26d3724a5635120ede570b383ddf5790",
+						"transaction.name": null,
+						transactionId: "2e1a7d60f6a4400d",
+					},
+				],
+				"Nested/OtherTransaction/Background/Custom::Helpers/custom_instance_method": [
+					{
+						"code.lineno": "27",
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_instance_method",
+						name: "OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+						timestamp: 1651700387308,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						"transaction.name": null,
+						transactionId: "ab968a3e203d2451",
+					},
+					{
+						"code.lineno": "27",
+						"code.namespace": "Custom::Helpers",
+						"code.function": "custom_instance_method",
+						name: "OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+						timestamp: 1651700356133,
+						traceId: "26d3724a5635120ede570b383ddf5790",
+						"transaction.name": null,
+						transactionId: "2e1a7d60f6a4400d",
+					},
+				],
+				"Custom/CLMtesting/ClassMethod": [
+					{
+						"code.lineno": 16,
+						"code.namespace": "Custom::Helpers",
+						"code.function": "self.custom_class_method_too",
+						name: "Custom/CLMtesting/ClassMethod",
+						timestamp: 1651700387308,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						"transaction.name": null,
+						transactionId: "ab968a3e203d2451",
+					},
+					{
+						"code.lineno": 16,
+						"code.namespace": "Custom::Helpers",
+						"code.function": "self.custom_class_method_too",
+						name: "Custom/CLMtesting/ClassMethod",
+						timestamp: 1651700356133,
+						traceId: "26d3724a5635120ede570b383ddf5790",
+						"transaction.name": null,
+						transactionId: "2e1a7d60f6a4400d",
+					},
+				],
+			};
+
+			const metricTimesliceNames: MetricTimeslice[] = [
+				{
+					facet: "Nested/OtherTransaction/Background/Custom::Helpers/custom_class_method",
+					averageDuration: 1.1,
+					metricTimesliceName:
+						"Nested/OtherTransaction/Background/Custom::Helpers/custom_class_method",
+				},
+				{
+					facet: "Nested/OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+					averageDuration: 1.2,
+					metricTimesliceName:
+						"Nested/OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+				},
+				{
+					facet: "Custom/CLMtesting/ClassMethod",
+					averageDuration: 1.3,
+					metricTimesliceName: "Custom/CLMtesting/ClassMethod",
+				},
+				{
+					facet: "Custom/CLMtesting/InstanceMethod",
+					averageDuration: 1.4,
+					metricTimesliceName: "Custom/CLMtesting/InstanceMethod",
+				},
+			];
+
+			const results = strategy.addMethodName(groupedByTransactionName, metricTimesliceNames);
+			// console.info("result", JSON.stringify(results, null, 2));
+			expect(results).toEqual([
+				{
+					className: "Helpers",
+					facet: "Nested/OtherTransaction/Background/Custom::Helpers/custom_class_method",
+					metricTimesliceName:
+						"Nested/OtherTransaction/Background/Custom::Helpers/custom_class_method",
+					averageDuration: 1.1,
+					namespace: "Custom",
+					metadata: {
+						"code.lineno": "11",
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						transactionId: "ab968a3e203d2451",
+						"code.namespace": "Custom",
+						"code.function": "custom_class_method",
+					},
+					functionName: "custom_class_method",
+				},
+				{
+					className: "Helpers",
+					facet: "Nested/OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+					metricTimesliceName:
+						"Nested/OtherTransaction/Background/Custom::Helpers/custom_instance_method",
+					averageDuration: 1.2,
+					namespace: "Custom",
+					metadata: {
+						"code.lineno": "27",
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						transactionId: "ab968a3e203d2451",
+						"code.namespace": "Custom",
+						"code.function": "custom_instance_method",
+					},
+					functionName: "custom_instance_method",
+				},
+				{
+					facet: "Custom/CLMtesting/ClassMethod",
+					averageDuration: 1.3,
+					className: "Helpers",
+					functionName: "self.custom_class_method_too",
+					metricTimesliceName: "Custom/CLMtesting/ClassMethod",
+					namespace: "Custom",
+					metadata: {
+						"code.lineno": 16,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						transactionId: "ab968a3e203d2451",
+						"code.namespace": "Custom",
+						"code.function": "self.custom_class_method_too",
+					},
+				},
+				{
+					facet: "Custom/CLMtesting/InstanceMethod",
+					averageDuration: 1.4,
+					className: "Helpers",
+					functionName: "custom_instance_method_too",
+					metricTimesliceName: "Custom/CLMtesting/InstanceMethod",
+					namespace: "Custom",
+					metadata: {
+						"code.lineno": 33,
+						traceId: "40c7dedd273ee4a475756393a996a03b",
+						transactionId: "ab968a3e203d2451",
+						"code.namespace": "Custom",
+						"code.function": "custom_instance_method_too",
+					},
+				},
+			]);
+		});
+
+		it("parses ruby class/function syntax", () => {
+			const provider = new NewRelicProviderStub({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"ruby",
+				"/foo/bar.rb",
+				{
+					fileUri: "/foo/bar.rb",
+					languageId: "ruby",
+				},
+				"locator",
+				provider
+			);
+			const groupedByTransactionName: Dictionary<Span[]> = {
+				"Nested/OtherTransaction/Background/WhichIsWhich/samename": [
+					{
+						"code.filepath": "/usr/src/app/lib/which_is_which.rb",
+						"code.function": "samename",
+						"code.lineno": "20",
+						"code.namespace": "WhichIsWhich",
+						name: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+						timestamp: 1651855258268,
+						traceId: "8c39f01c9e867d5d7179a6a5152a8f8e",
+						"transaction.name": null,
+						transactionId: "90b4cb9daa96f88b",
+					},
+					{
+						"code.filepath": "/usr/src/app/lib/which_is_which.rb",
+						"code.function": "self.samename",
+						"code.lineno": "9",
+						"code.namespace": "WhichIsWhich",
+						name: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+						timestamp: 1651855257962,
+						traceId: "8c39f01c9e867d5d7179a6a5152a8f8e",
+						"transaction.name": null,
+						transactionId: "90b4cb9daa96f88b",
+					},
+				],
+			};
+
+			const metricTimesliceNames: MetricTimeslice[] = [
+				{
+					facet: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					averageDuration: 1.1,
+					metricTimesliceName: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+				},
+				{
+					facet: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					averageDuration: 1.2,
+					metricTimesliceName: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+				},
+			];
+
+			const results = strategy.addMethodName(groupedByTransactionName, metricTimesliceNames);
+			// console.info("result", JSON.stringify(results, null, 2));
+			expect(results).toEqual([
+				{
+					className: "WhichIsWhich",
+					facet: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					metricTimesliceName: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					averageDuration: 1.1,
+					namespace: "WhichIsWhich",
+					metadata: {
+						"code.function": "samename",
+						"code.lineno": "20",
+						traceId: "8c39f01c9e867d5d7179a6a5152a8f8e",
+						transactionId: "90b4cb9daa96f88b",
+						"code.namespace": "WhichIsWhich",
+					},
+					functionName: "samename",
+				},
+				{
+					className: "WhichIsWhich",
+					facet: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					metricTimesliceName: "Nested/OtherTransaction/Background/WhichIsWhich/samename",
+					averageDuration: 1.2,
+					namespace: "WhichIsWhich",
+					metadata: {
+						"code.function": "samename",
+						"code.lineno": "20",
+						traceId: "8c39f01c9e867d5d7179a6a5152a8f8e",
+						transactionId: "90b4cb9daa96f88b",
+						"code.namespace": "WhichIsWhich",
+					},
+					functionName: "samename",
+				},
+			]);
+		});
+
+		it("getsSpansForFlask", async () => {
+			const provider = new NewRelicProviderStub2({} as any, {} as any);
+			const strategy = new FLTSpanLookupStrategy(
+				"entityGuid",
+				1,
+				"python",
+				"/foo/bar.py",
+				{
+					fileUri: "/foo/bar.py",
+					languageId: "python",
+				},
+				"locator",
+				provider
+			);
+
+			const results = await strategy.addMethodName(
+				{
+					"Function/apis.v2.superheros:superheros_superhero_by_slug": [
+						{
+							"code.filepath": "/superheros/apis/v2/superheroes.py",
+							"code.function": "SuperheroBySlug",
+							name: "Function/apis.v2.superheros:superheros_superhero_by_slug",
+							timestamp: 1647612515523,
+							"transaction.name": null,
+						},
+					],
+				},
+				[
+					{
+						facet: "Function/apis.v2.superheros:superheros_superhero_by_slug",
+						averageDuration: 0.0025880090121565193,
+						metricTimesliceName: "Function/apis.v2.superheros:superheros_superhero_by_slug",
+					},
+				]
+			);
+
+			// console.log(JSON.stringify(results, null, 4));
+			// NOTE: this data is not quite correct, but we're testing to assert that we will use whatever is in `code.function`
+			expect(results[0].functionName).toEqual("SuperheroBySlug");
+		});
 	});
 });
 
