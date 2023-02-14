@@ -403,8 +403,9 @@ export const Signup = (props: Props) => {
 	const onClickNewRelicSignup = useCallback(
 		(event: React.SyntheticEvent) => {
 			event.preventDefault();
-			HostApi.instance.track("Provider Auth Selected", {
+			HostApi.instance.track("Signup Method Selected", {
 				Provider: "New Relic",
+				Email: email,
 			});
 			//@TODO: Change to idp signup page event
 			dispatch(goToNewRelicSignup({}));
@@ -415,8 +416,9 @@ export const Signup = (props: Props) => {
 	const onClickGithubSignup = useCallback(
 		(event: React.SyntheticEvent) => {
 			event.preventDefault();
-			HostApi.instance.track("Provider Auth Selected", {
+			HostApi.instance.track("Signup Method Selected", {
 				Provider: "GitHub",
+				Email: email,
 			});
 			if (derivedState.isInVSCode && derivedState.supportsVSCodeGithubSignin) {
 				return dispatch(startIDESignin("github", buildSignupInfo()));
@@ -430,8 +432,9 @@ export const Signup = (props: Props) => {
 	const onClickGitlabSignup = useCallback(
 		(event: React.SyntheticEvent) => {
 			event.preventDefault();
-			HostApi.instance.track("Provider Auth Selected", {
+			HostApi.instance.track("Signup Method Selected", {
 				Provider: "GitLab",
+				Email: email,
 			});
 			return dispatch(startSSOSignin("gitlab", buildSignupInfo()));
 		},
@@ -441,8 +444,9 @@ export const Signup = (props: Props) => {
 	const onClickBitbucketSignup = useCallback(
 		(event: React.SyntheticEvent) => {
 			event.preventDefault();
-			HostApi.instance.track("Provider Auth Selected", {
+			HostApi.instance.track("Signup Method Selected", {
 				Provider: "Bitbucket",
+				Email: email,
 			});
 			return dispatch(startSSOSignin("bitbucket", buildSignupInfo()));
 		},
@@ -451,7 +455,9 @@ export const Signup = (props: Props) => {
 
 	const onClickOktaSignup = useCallback(
 		(event: React.SyntheticEvent) => {
-			return dispatch(goToOktaConfig({ fromSignup: true, inviteCode: props.inviteCode }));
+			return dispatch(
+				goToOktaConfig({ fromSignup: true, inviteCode: props.inviteCode, email: email })
+			);
 		},
 		[props.type]
 	);
