@@ -14,7 +14,7 @@ import { generateMethodAverageDurationQuery } from "../methodAverageDurationQuer
 import { generateMethodErrorRateQuery } from "../methodErrorRateQuery";
 import { Index } from "@codestream/utils/types";
 
-export class FLTSpanLookupStrategy implements FLTStrategy {
+export class FLTCodeAttributeStrategy implements FLTStrategy {
 	constructor(
 		protected entityGuid: string,
 		protected accountId: number,

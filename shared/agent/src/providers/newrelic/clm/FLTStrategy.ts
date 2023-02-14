@@ -9,7 +9,7 @@ import {
 } from "@codestream/protocols/agent";
 import { FLTNameInferenceJavaStrategy } from "./FLTNameInferenceJavaStrategy";
 import { INewRelicProvider } from "../../newrelic";
-import { FLTSpanLookupStrategy } from "./FLTSpanLookupStrategy";
+import { FLTCodeAttributeStrategy } from "./FLTCodeAttributeStrategy";
 
 export interface FLTStrategy {
 	execute(): Promise<{
@@ -31,7 +31,7 @@ export class FLTStrategyFactory {
 	): FLTStrategy[] {
 		const strategies: FLTStrategy[] = [];
 		strategies.push(
-			new FLTSpanLookupStrategy(
+			new FLTCodeAttributeStrategy(
 				entityGuid,
 				accountId,
 				languageId,

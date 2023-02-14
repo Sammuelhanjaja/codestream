@@ -15,13 +15,13 @@ import {
 	MetricTimeslice,
 	Span,
 } from "../../../../../src/providers/newrelic/newrelic.types";
-import { FLTSpanLookupStrategy } from "../../../../../src/providers/newrelic/clm/FLTSpanLookupStrategy";
+import { FLTCodeAttributeStrategy } from "../../../../../src/providers/newrelic/clm/FLTCodeAttributeStrategy";
 
-describe("FLTSpanLookupStrategy", () => {
+describe("FLTCodeAttributeStrategy", () => {
 	describe("addMethodName", () => {
 		it("parses python function name", async () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"python",
@@ -106,7 +106,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("maps python code.namespace", async () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"python",
@@ -162,7 +162,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("handles ruby controller", () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"ruby",
@@ -284,7 +284,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("handles ruby ActiveJob", () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"ruby",
@@ -353,7 +353,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("parses ruby modules:class:functions syntax", () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"ruby",
@@ -551,7 +551,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("parses ruby class/function syntax", () => {
 			const provider = new NewRelicProviderStub({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"ruby",
@@ -641,7 +641,7 @@ describe("FLTSpanLookupStrategy", () => {
 
 		it("getsSpansForFlask", async () => {
 			const provider = new NewRelicProviderStub2({} as any, {} as any);
-			const strategy = new FLTSpanLookupStrategy(
+			const strategy = new FLTCodeAttributeStrategy(
 				"entityGuid",
 				1,
 				"python",
