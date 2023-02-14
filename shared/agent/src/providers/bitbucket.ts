@@ -250,28 +250,25 @@ interface BitbucketRepoFull extends BitbucketRepo {
 		branching_model: boolean;
 	};
 	author: BitbucketAuthor;
-	participants?: {
-		nodes?: {
-			avatarUrl?: string;
-			type?: string;
-			user?: {
-				display_name?: string;
-				links?: {
-					avatar?: {
-						href?: string;
-					};
+	participants: {
+		type?: string;
+		user?: {
+			display_name?: string;
+			links?: {
+				avatar?: {
+					href?: string;
 				};
-				type?: string;
-				uuid?: string;
-				account_id?: string;
-				nickname?: string;
 			};
-			role?: string;
-			approved?: boolean;
-			state?: string;
-			participated_on?: string;
-		}[];
-	};
+			type?: string;
+			uuid?: string;
+			account_id?: string;
+			nickname?: string;
+		};
+		role?: string;
+		approved?: boolean;
+		state?: string;
+		participated_on?: string;
+	}[];
 }
 
 interface BitbucketPullRequestComment2 {
@@ -515,28 +512,25 @@ interface BitbucketPullRequest {
 	state: string;
 	title: string;
 	updated_on: string;
-	participants?: {
-		nodes?: {
-			avatarUrl?: string;
-			type: string;
-			user: {
-				display_name: string;
-				links: {
-					avatar: {
-						href: string;
-					};
+	participants: {
+		type: string;
+		user: {
+			display_name: string;
+			links: {
+				avatar: {
+					href: string;
 				};
-				type?: string;
-				uuid: string;
-				account_id?: string;
-				nickname: string;
 			};
-			role: string; // PARTICIPANT, REVIEWER
-			approved: boolean;
-			state: string; // approved, changes_requested, null
-			participated_on: string;
-		}[];
-	};
+			type?: string;
+			uuid: string;
+			account_id?: string;
+			nickname: string;
+		};
+		role: string; // PARTICIPANT, REVIEWER
+		approved: boolean;
+		state: string; // approved, changes_requested, null
+		participated_on: string;
+	}[];
 }
 
 interface BitbucketDiffStat {
@@ -943,16 +937,17 @@ export class BitbucketProvider
 			//check if PR is approved or unapproved
 			const isPRApproved = () => {
 				//returns false or true
-				if (pr.body.participants?.nodes) {
-					const participantLength = pr.body.participants.nodes.length;
-					const unapprovedParticipants = pr.body.participants.nodes.find(_ => !_.approved);
-					if (unapprovedParticipants) {
-						return false;
-					}
-					const approvedParticipants = pr.body.participants.nodes.filter(
+				if (pr.body.participants?.length) {
+					const participantLength = pr.body.participants?.length;
+					// const unapprovedParticipants = pr.body.participants.nodes.find(_ => !_.approved);
+					// if (unapprovedParticipants) {
+					// 	return false;
+					// }
+
+					const approvedParticipants = pr.body.participants?.filter(
 						_ => _.approved && _.state === "approved"
 					);
-					const isApproved = participantLength == approvedParticipants.length;
+					const isApproved = participantLength == approvedParticipants?.length;
 					return isApproved;
 				}
 				return false;
@@ -960,47 +955,35 @@ export class BitbucketProvider
 
 			//check if changes are requested or not
 			const isChangesRequested = () => {
-				if (pr.body.participants?.nodes) {
-					const changesRequestedParticipants = pr.body.participants.nodes.filter(
+				if (pr.body.participants?.length) {
+					const changesRequestedParticipants = pr.body.participants?.filter(
 						_ => !_.approved && _.state === "changes_requested"
 					);
-					if (changesRequestedParticipants) {
+					if (changesRequestedParticipants.length) {
 						return true;
 					}
 				}
 				return false;
 			};
 
-			const mapping = {
-				approve: { icon: "thumbsup", text: "Unapprove", requestedState: "unapprove" },
-				unapprove: { icon: "thumbsdown", text: "Approve", requestedState: "approve" },
-				"request-changes": {
-					icon: "question",
-					text: "Request Changes",
-					requestedState: "request-changes",
-				},
-				"changes-requested": {
-					icon: "question",
-					text: "Changes Requested",
-					requestedState: "changes-requested", //this really mean un-request changes (bitbucket button on their UI says changes-requested)
-				},
-			};
-
 			let thing1;
 			let thing2;
 
-			if (!isChangesRequested() && !isPRApproved()) {
+			const isRequested = isChangesRequested();
+			const isApproved = isPRApproved(); //true/false
+
+			if (!isRequested && !isApproved) {
 				// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
-				thing1 = mapping["unapprove"];
-				thing2 = mapping["request-changes"];
-			} else if (isChangesRequested() && !isPRApproved()) {
+				thing1 = "unapprove";
+				thing2 = "request-changes";
+			} else if (isRequested && !isApproved) {
 				//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
-				thing1 = mapping["unapprove"];
-				thing2 = mapping["changes-requested"];
-			} else if (isPRApproved()) {
+				thing1 = "unapprove";
+				thing2 = "changes-requested";
+			} else if (isApproved) {
 				//it's approved, therefore there cannot be any request changes
-				thing1 = mapping["approve"];
-				thing2 = mapping["request-changes"];
+				thing1 = "approve";
+				thing2 = "request-changes";
 			}
 
 			response = {
@@ -1058,8 +1041,8 @@ export class BitbucketProvider
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
-						isApproved: isPRApproved(),
-						isRequested: isChangesRequested(),
+						isApproved: isApproved,
+						isRequested: isRequested,
 						approvalStatus: thing1,
 						requestStatus: thing2,
 					} as any, //TODO: make this work
@@ -1208,7 +1191,7 @@ export class BitbucketProvider
 		pullRequestReviewId?: string;
 		userId: string;
 	}): Promise<Directives> {
-		const payload: BitbucketSubmitReviewRequest = {
+		const payload: any = {
 			type: request.eventType,
 		};
 		Logger.log(`commenting:pullrequestsubmitreview`, {
@@ -1224,7 +1207,7 @@ export class BitbucketProvider
 		if (request.eventType === "changes-requested") {
 			//to un-request changes you have to run a delete
 			response = await this.delete<BitbucketSubmitReviewRequest>(
-				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/$request-changes`
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/request-changes`
 			);
 			//bitbucket doesn't return anything on this delete
 			return this.handleResponse(request.pullRequestId, {
@@ -1236,19 +1219,45 @@ export class BitbucketProvider
 						},
 					},
 					{
-						type: (request.eventType = "removePendingReview"),
+						type: "removePendingReview",
 						data: {
 							user: {
 								uuid: request.userId,
 							},
-							state: "null",
+							state: "null" || "approve", //todo: figure this out
+							participated_on: toUtcIsoNow(),
+						},
+					},
+				],
+			});
+		} else if (request.eventType === "unapprove") {
+			//to unapprove you have to run a delete
+			response = await this.delete<any>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/approve`
+			);
+			//bitbucket doesn't return anything on this delete
+			return this.handleResponse(request.pullRequestId, {
+				directives: [
+					{
+						type: "updatePullRequest",
+						data: {
+							updatedAt: Dates.toUtcIsoNow(),
+						},
+					},
+					{
+						type: "removeApprovedBy",
+						data: {
+							user: {
+								uuid: request.userId,
+							},
+							state: "null" || "changes-requested", //todo: figure this out
 							participated_on: toUtcIsoNow(),
 						},
 					},
 				],
 			});
 		} else {
-			response = await this.post<BitbucketSubmitReviewRequest, any>(
+			response = await this.post<any, any>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${request.eventType}`,
 				payload
 			);
@@ -1262,12 +1271,7 @@ export class BitbucketProvider
 						},
 					},
 					{
-						type:
-							request.eventType === "approve"
-								? "addApprovedBy"
-								: request.eventType === "unapprove"
-								? "removeApprovedBy"
-								: "reviewSubmitted", //request changes
+						type: request.eventType === "approve" ? "addApprovedBy" : "reviewSubmitted", //request changes
 						data: {
 							user: {
 								uuid: response.body.uuid,

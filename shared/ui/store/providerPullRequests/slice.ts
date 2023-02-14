@@ -844,19 +844,57 @@ const providerPullRequestsSlice = createSlice({
 						} else if (directive.type === "addApprovedBy") {
 							//this is for approve
 							// go through the array of participants, match the uuid, then do update
-							const user_id = directive.data.user.uuid;
-							for (const item in directive.data) {
-								if (pr.participants.nodes.includes(user_id)) {
-									pr.participants.nodes[item] = directive.data[item];
-								}
+							const uuid = directive.data.user.uuid;
+							const foundUser = pr.participants.nodes.find(_ => _.user?.uuid === uuid);
+							pr.isApproved = true;
+							if (foundUser) {
+								foundUser.type = "approve";
+								foundUser.state = directive.data.state;
+								foundUser.approved = directive.data.approved;
+								foundUser.participated_on = directive.data.participated_on;
+							} else {
+								pr.participants.nodes.push({
+									user: {
+										uuid: uuid,
+										links: {
+											avatar: {
+												href: "foobar",
+											},
+										},
+									},
+									type: "approve", // TODO
+									state: directive.data.state,
+									approved: directive.data.approved,
+									participated_on: directive.data.participated_on,
+									approvalStatus: "approve",
+								} as any); // TODO
 							}
 						} else if (directive.type === "removeApprovedBy") {
 							//this is for unapprove
-							const user_id = directive.data.user.uuid;
-							for (const item in directive.data) {
-								if (pr.participants.nodes.includes(user_id)) {
-									pr.participants.nodes[item] = directive.data[item];
-								}
+							const uuid = directive.data.user.uuid;
+							const foundUser = pr.participants.nodes.find(_ => _.user?.uuid === uuid);
+							pr.isApproved = false;
+							if (foundUser) {
+								foundUser.type = "unapprove";
+								foundUser.state = directive.data.state;
+								foundUser.approved = directive.data.approved;
+								foundUser.participated_on = directive.data.participated_on;
+							} else {
+								pr.participants.nodes.push({
+									user: {
+										uuid: uuid,
+										links: {
+											avatar: {
+												href: "foobar",
+											},
+										},
+									},
+									type: "unapprove", // TODO
+									state: directive.data.state,
+									approved: directive.data.approved,
+									participated_on: directive.data.participated_on,
+									approvalStatus: "unapprove",
+								} as any); // TODO
 							}
 						} else if (directive.type === "reviewSubmitted") {
 							//This is for request changes
@@ -872,6 +910,18 @@ const providerPullRequestsSlice = createSlice({
 							for (const item in directive.data) {
 								if (pr.participants.nodes.includes(user_id)) {
 									pr.participants.nodes[item] = directive.data[item];
+								}
+								if (directive.data.includes("isApproved")) {
+									pr[item] = directive.data[item];
+								}
+								if (directive.data.includes("isRequested")) {
+									pr[item] = directive.data[item];
+								}
+								if (directive.data.includes("approvalStatus")) {
+									pr[item] = directive.data[item];
+								}
+								if (directive.data.includes("requestStatus")) {
+									pr[item] = directive.data[item];
 								}
 							}
 						} else if (directive.type === "addNode") {

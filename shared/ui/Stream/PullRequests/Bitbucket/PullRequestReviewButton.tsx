@@ -13,50 +13,45 @@ export const PullRequestReviewButton = (props: Props) => {
 	const dispatch = useAppDispatch();
 
 	const mapping = {
-		approve: { icon: "thumbsup", text: "Unapprove", requestedState: "unapprove" },
-		unapprove: { icon: "thumbsdown", text: "Approve", requestedState: "approve" },
+		approve: { icon: "thumbsup", text: "Unapprove", requestedState: "unapprove" }, //this pullrequest is approved
+		unapprove: { icon: "thumbsdown", text: "Approve", requestedState: "approve" }, //this pullrequest is unapproved
 		"request-changes": {
 			icon: "question",
 			text: "Request Changes",
-			requestedState: "request-changes",
+			requestedState: "request-changes", //this pull request doesn't already have changes requested
 		},
 		"changes-requested": {
 			icon: "question",
 			text: "Changes Requested",
-			requestedState: "changes-requested",
+			requestedState: "changes-requested", //this really mean un-request changes (bitbucket button on their UI says changes-requested)
 		},
 	};
 
-	const isApproved = props.pullRequest.isApproved;
-	const isRequested = props.pullRequest.isRequested;
-	const approvalStatus = props.pullRequest.approvalStatus;
-	const requestStatus = props.pullRequest.requestStatus;
+	const [requestType, setRequestType] = useState<{
+		icon: string;
+		text: string;
+		requestedState: string;
+	}>(mapping[props.pullRequest.requestStatus]);
+	const [approvalType, setApprovalType] = useState<{
+		icon: string;
+		text: string;
+		requestedState: string;
+	}>(mapping[props.pullRequest.approvalStatus]);
 
 	useDidMount(() => {
-		if (!isApproved && !isRequested) {
-			// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
-			setReviewTypeApproval(mapping["unapprove"]);
-			setReviewTypeRequest(mapping["request-changes"]);
-		} else if (!isApproved && isRequested) {
-			//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
-			setReviewTypeApproval(mapping["unapprove"]);
-			setReviewTypeRequest(mapping["changes-requested"]);
-		} else if (isApproved) {
-			setReviewTypeApproval(mapping["approve"]);
-			setReviewTypeRequest(mapping["request-changes"]);
+		if (props.pullRequest.approvalStatus === "approve") {
+			setApprovalType(mapping["approve"]);
+		}
+		if (props.pullRequest.approvalStatus === "unapprove") {
+			setApprovalType(mapping["unapprove"]);
+		}
+		if (props.pullRequest.requestStatus === "request-changes") {
+			setRequestType(mapping["request-changes"]);
+		}
+		if (props.pullRequest.requestStatus === "changes-requested") {
+			setRequestType(mapping["changes-requested"]);
 		}
 	});
-
-	const [reviewTypeApproval, setReviewTypeApproval] = useState<{
-		icon: string;
-		text: string;
-		requestedState: string;
-	}>(approvalStatus);
-	const [reviewTypeRequest, setReviewTypeRequest] = useState<{
-		icon: string;
-		text: string;
-		requestedState: string;
-	}>(requestStatus);
 
 	const submitReview = async (value: string) => {
 		dispatch(
@@ -77,12 +72,12 @@ export const PullRequestReviewButton = (props: Props) => {
 				<Button
 					disabled={props.pullRequest.viewerDidAuthor}
 					onClick={e => {
-						submitReview(reviewTypeApproval.requestedState);
+						submitReview(approvalType.requestedState);
 					}}
 				>
 					<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-						name={reviewTypeApproval.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
-						title={reviewTypeApproval.text} //text that shows to user when they hover, can be either Approve of Unapprove
+						name={approvalType.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
+						title={approvalType.text} //text that shows to user when they hover, can be either Approve of Unapprove
 						trigger={["hover"]}
 						delay={1}
 						placement="bottom"
@@ -93,18 +88,15 @@ export const PullRequestReviewButton = (props: Props) => {
 				<Button
 					disabled={props.pullRequest.viewerDidAuthor}
 					onClick={e => {
-						submitReview(reviewTypeApproval.requestedState);
+						submitReview(requestType.requestedState);
 					}}
 				>
 					<Icon // if it's the person's own PR, they cannot request changes, should be grayed out. If changes are requested, it should show that
-						name={reviewTypeRequest.icon}
-						title={reviewTypeRequest.text} //text that shows to user when hover, can be either Changes Requested or Request Changes
+						name={requestType.icon}
+						title={requestType.text} //text that shows to user when hover, can be either Changes Requested or Request Changes
 						trigger={["hover"]}
 						delay={1}
 						placement="bottom"
-						onClick={e => {
-							submitReview(reviewTypeRequest.requestedState);
-						}}
 					/>
 				</Button>
 			</span>
