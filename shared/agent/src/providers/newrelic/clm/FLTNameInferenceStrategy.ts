@@ -143,9 +143,9 @@ export abstract class FLTNameInferenceStrategy implements FLTStrategy {
 		sampleSizes: FileLevelTelemetrySampleSize[]
 	): Promise<FileLevelTelemetryErrorRate[]> {
 		const query =
-			`SELECT rate(count(*), 1 minute) AS 'value' ` +
+			`SELECT count(*) AS 'value' ` +
 			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND \`error.group.guid\` IS NOT NULL AND (${lookup}) FACET name ` +
-			`${this._timeFrame} LIMIT MAX EXTRAPOLATE`;
+			`${this._timeFrame} LIMIT MAX`;
 		const results = await this.runNrql<NameValue>(query);
 		return results.map(_ => this.toFileLevelErrorRate(_, sampleSizes));
 	}
@@ -155,7 +155,7 @@ export abstract class FLTNameInferenceStrategy implements FLTStrategy {
 		sampleSizes: FileLevelTelemetrySampleSize[]
 	): Promise<FileLevelTelemetryErrorRate[]> {
 		const query =
-			`SELECT rate(count(apm.service.transaction.error.count), 1 minute) AS 'value' ` +
+			`SELECT count(apm.service.transaction.error.count) AS 'value' ` +
 			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${this._timeFrame} LIMIT MAX`;
 		const results = await this.runNrql<NameValue>(query);
