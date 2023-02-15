@@ -135,7 +135,7 @@ export class ClmManager {
 				averageDuration,
 				errorRate,
 				sinceDateFormatted: "30 minutes", //begin ? Dates.toFormatter(new Date(begin)).fromNow() : "",
-				lastUpdateDate: undefined, // TODO something
+				lastUpdateDate: Date.now(),
 				hasAnyData: Boolean(hasAnyData),
 				newRelicAlertSeverity: entity.alertSeverity,
 				newRelicAccountId: newRelicAccountId,
