@@ -330,17 +330,22 @@ export function CompanyCreation(props: {
 							)}
 							{!isCreatingOrg && !initialLoad && (
 								<>
+									{/* 
 									{!isNewRelicStaffOnProductionEnvironment() && (
-										<>
-											<JoinHeader>
-												<FormattedMessage
-													id="signUp.joinOrganization"
-													defaultMessage="Join your teammates on CodeStream"
-												/>
-											</JoinHeader>
-										</>
+									*/}
+									<>
+										<JoinHeader>
+											<FormattedMessage
+												id="signUp.joinOrganization"
+												defaultMessage="Join your teammates on CodeStream"
+											/>
+										</JoinHeader>
+									</>
+									{/* 
 									)}
+									/*}
 
+									{/* 
 									{isNewRelicStaffOnProductionEnvironment() && (
 										<>
 											<JoinHeader>Relics, are you using the correct environment?</JoinHeader>
@@ -362,6 +367,7 @@ export function CompanyCreation(props: {
 											</NrUserButtonWrapper>
 										</>
 									)}
+									*/}
 
 									{isLoading && (
 										<InlineLoadingWrapper>
