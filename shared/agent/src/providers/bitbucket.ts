@@ -1002,16 +1002,15 @@ export class BitbucketProvider
 			// 	thing2 = "request-changes";
 			// }
 
-			//TODO:  Make this viewer did author work
-			// const isViewerDidAuthor = () => {
-			// 	if ((pr.body.viewer.id.toString()) === (pr.body.author.uuid)) {
-			// 		return true;
-			// 	} else {
-			// 		return false;
-			// 	}
-			// }
+			const isViewerDidAuthor = () => {
+				if (userResponse.account_id === pr.body.author.account_id) {
+					return true;
+				} else {
+					return false;
+				}
+			};
 
-			// const viewerDidAuthor = isViewerDidAuthor();
+			const viewerDidAuthor = isViewerDidAuthor();
 
 			response = {
 				viewer: viewer,
@@ -1068,7 +1067,7 @@ export class BitbucketProvider
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
-						viewerDidAuthor: false, //TODO
+						viewerDidAuthor: viewerDidAuthor, //TODO
 						// isApproved: isApproved,
 						// isRequested: isRequested,
 						// approvalStatus: thing1,
