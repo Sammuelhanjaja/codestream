@@ -139,7 +139,7 @@ interface BitbucketAuthor {
 	};
 }
 interface BitbucketRepoFull extends BitbucketRepo {
-	type: string;
+	type?: string;
 	full_name: string;
 	isApproved?: boolean;
 	isRequested?: boolean;
@@ -300,29 +300,49 @@ interface BitbucketMergeRequest {
 }
 
 interface BitbucketSubmitReviewRequestResponse {
-	type: string;
 	approved: boolean;
 	state: string;
 	participated_on: Date;
-	role: string;
 	user: {
-		display_name: string;
+		uuid: string;
 		links: {
 			avatar: {
 				href: string;
 			};
 		};
-		uuid: string;
-		account_id: string;
-		nickname: string;
-		type: string;
 	};
 }
-[];
 
 interface BitbucketSubmitReviewRequest {
 	type: string;
 }
+
+interface BitbucketParticipants {
+	type: string;
+	user: {
+		display_name: string;
+		links: {
+			self: {
+				href: string;
+			};
+			avatar: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+		};
+		type: string;
+		uuid: string;
+		account_id: string;
+		nickname: string;
+	};
+	role: string;
+	approved: boolean;
+	state: string;
+	participated_on: string;
+}
+[];
 
 interface BitBucketCreateCommentRequest {
 	content: {
@@ -479,6 +499,8 @@ interface BitbucketPullRequest {
 			};
 		};
 		display_name: BitbucketAuthor;
+		uuid: string;
+		account_id: string;
 	};
 	created_on: string;
 	description?: string;
@@ -513,7 +535,7 @@ interface BitbucketPullRequest {
 	title: string;
 	updated_on: string;
 	participants: {
-		type: string;
+		type?: string;
 		user: {
 			display_name: string;
 			links: {
@@ -840,6 +862,31 @@ export class BitbucketProvider
 		return { users: [] };
 	}
 
+	private isPRApproved = (participants: any) => {
+		//returns false or true
+		if (participants.length) {
+			const participantLength = participants.length;
+			const approvedParticipants = participants.filter(
+				(_: { approved: any; state: string }) => _.approved && _.state === "approved"
+			);
+			const isApproved = participantLength == approvedParticipants?.length;
+			return isApproved;
+		}
+		return false;
+	};
+
+	private isChangesRequested = (participants: any) => {
+		if (participants.length) {
+			const changesRequestedParticipants = participants.filter(
+				(_: { approved: any; state: string }) => !_.approved && _.state === "changes_requested"
+			);
+			if (changesRequestedParticipants.length) {
+				return true;
+			}
+		}
+		return false;
+	};
+
 	@log()
 	async getPullRequest(
 		request: FetchThirdPartyPullRequestRequest
@@ -934,57 +981,37 @@ export class BitbucketProvider
 				repos: allRepos.repos,
 			});
 
-			//check if PR is approved or unapproved
-			const isPRApproved = () => {
-				//returns false or true
-				if (pr.body.participants?.length) {
-					const participantLength = pr.body.participants?.length;
-					// const unapprovedParticipants = pr.body.participants.nodes.find(_ => !_.approved);
-					// if (unapprovedParticipants) {
-					// 	return false;
-					// }
+			// let thing1;
+			// let thing2;
+			// //check if pr is requested or not already
+			// const isRequested = this.isChangesRequested(pr.body.participants);
+			// //check if approved or not
+			// const isApproved = this.isPRApproved(pr.body.participants); //true/false
 
-					const approvedParticipants = pr.body.participants?.filter(
-						_ => _.approved && _.state === "approved"
-					);
-					const isApproved = participantLength == approvedParticipants?.length;
-					return isApproved;
-				}
-				return false;
-			};
+			// if (!isRequested && !isApproved) {
+			// 	// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
+			// 	thing1 = "unapprove";
+			// 	thing2 = "request-changes";
+			// } else if (isRequested && !isApproved) {
+			// 	//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
+			// 	thing1 = "unapprove";
+			// 	thing2 = "changes-requested";
+			// } else if (isApproved) {
+			// 	//it's approved, therefore there cannot be any request changes
+			// 	thing1 = "approve";
+			// 	thing2 = "request-changes";
+			// }
 
-			//check if changes are requested or not
-			const isChangesRequested = () => {
-				if (pr.body.participants?.length) {
-					const changesRequestedParticipants = pr.body.participants?.filter(
-						_ => !_.approved && _.state === "changes_requested"
-					);
-					if (changesRequestedParticipants.length) {
-						return true;
-					}
-				}
-				return false;
-			};
+			//TODO:  Make this viewer did author work
+			// const isViewerDidAuthor = () => {
+			// 	if ((pr.body.viewer.id.toString()) === (pr.body.author.uuid)) {
+			// 		return true;
+			// 	} else {
+			// 		return false;
+			// 	}
+			// }
 
-			let thing1;
-			let thing2;
-
-			const isRequested = isChangesRequested();
-			const isApproved = isPRApproved(); //true/false
-
-			if (!isRequested && !isApproved) {
-				// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
-				thing1 = "unapprove";
-				thing2 = "request-changes";
-			} else if (isRequested && !isApproved) {
-				//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
-				thing1 = "unapprove";
-				thing2 = "changes-requested";
-			} else if (isApproved) {
-				//it's approved, therefore there cannot be any request changes
-				thing1 = "approve";
-				thing2 = "request-changes";
-			}
+			// const viewerDidAuthor = isViewerDidAuthor();
 
 			response = {
 				viewer: viewer,
@@ -1041,10 +1068,11 @@ export class BitbucketProvider
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
-						isApproved: isApproved,
-						isRequested: isRequested,
-						approvalStatus: thing1,
-						requestStatus: thing2,
+						viewerDidAuthor: false, //TODO
+						// isApproved: isApproved,
+						// isRequested: isRequested,
+						// approvalStatus: thing1,
+						// requestStatus: thing2,
 					} as any, //TODO: make this work
 				},
 			};
@@ -1190,6 +1218,7 @@ export class BitbucketProvider
 		// used with old servers
 		pullRequestReviewId?: string;
 		userId: string;
+		participants: any[];
 	}): Promise<Directives> {
 		const payload: any = {
 			type: request.eventType,
@@ -1209,6 +1238,8 @@ export class BitbucketProvider
 			response = await this.delete<BitbucketSubmitReviewRequest>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/request-changes`
 			);
+			// const isApproved = this.isPRApproved(request.participants);
+			// const isRequested = this.isChangesRequested(request.participants);
 			//bitbucket doesn't return anything on this delete
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1222,19 +1253,22 @@ export class BitbucketProvider
 						type: "removePendingReview",
 						data: {
 							user: {
-								uuid: request.userId,
+								account_id: request.userId,
 							},
-							state: "null" || "approve", //todo: figure this out
+							state: "null",
 							participated_on: toUtcIsoNow(),
+							approved: false,
 						},
 					},
 				],
 			});
 		} else if (request.eventType === "unapprove") {
 			//to unapprove you have to run a delete
-			response = await this.delete<any>(
+			response = await this.delete<BitbucketSubmitReviewRequest>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/approve`
 			);
+			// const isApproved = this.isPRApproved(request.participants);
+			// const isRequested = this.isChangesRequested(request.participants);
 			//bitbucket doesn't return anything on this delete
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1248,19 +1282,26 @@ export class BitbucketProvider
 						type: "removeApprovedBy",
 						data: {
 							user: {
-								uuid: request.userId,
+								account_id: request.userId,
 							},
-							state: "null" || "changes-requested", //todo: figure this out
+							state: "null",
 							participated_on: toUtcIsoNow(),
+							approved: false,
 						},
 					},
 				],
 			});
 		} else {
-			response = await this.post<any, any>(
+			response = await this.post<
+				BitbucketSubmitReviewRequest,
+				BitbucketSubmitReviewRequestResponse
+			>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${request.eventType}`,
 				payload
 			);
+
+			// const isApproved = this.isPRApproved(request.participants);
+			// const isRequested = this.isChangesRequested(request.participants);
 
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1274,7 +1315,12 @@ export class BitbucketProvider
 						type: request.eventType === "approve" ? "addApprovedBy" : "reviewSubmitted", //request changes
 						data: {
 							user: {
-								uuid: response.body.uuid,
+								account_id: response.body.user.account_id,
+								links: {
+									avatar: {
+										href: response.body.user.links.avatar.href,
+									},
+								},
 							},
 							approved: response.body.approved,
 							state: response.body.state,

@@ -844,57 +844,38 @@ const providerPullRequestsSlice = createSlice({
 						} else if (directive.type === "addApprovedBy") {
 							//this is for approve
 							// go through the array of participants, match the uuid, then do update
-							const uuid = directive.data.user.uuid;
-							const foundUser = pr.participants.nodes.find(_ => _.user?.uuid === uuid);
-							pr.isApproved = true;
+							const uuid = directive.data.user.account_id;
+							const foundUser = pr.participants.nodes.find(_ => _.user?.account_id === uuid);
 							if (foundUser) {
-								foundUser.type = "approve";
 								foundUser.state = directive.data.state;
 								foundUser.approved = directive.data.approved;
 								foundUser.participated_on = directive.data.participated_on;
 							} else {
 								pr.participants.nodes.push({
 									user: {
-										uuid: uuid,
+										account_id: uuid,
 										links: {
 											avatar: {
-												href: "foobar",
+												href: directive.data.user.links.avatar.href,
 											},
 										},
 									},
-									type: "approve", // TODO
 									state: directive.data.state,
 									approved: directive.data.approved,
 									participated_on: directive.data.participated_on,
-									approvalStatus: "approve",
 								} as any); // TODO
 							}
 						} else if (directive.type === "removeApprovedBy") {
 							//this is for unapprove
-							const uuid = directive.data.user.uuid;
-							const foundUser = pr.participants.nodes.find(_ => _.user?.uuid === uuid);
-							pr.isApproved = false;
+							const uuid = directive.data.user.account_id;
+							const foundUser = pr.participants.nodes.find(_ => _.user?.account_id === uuid);
 							if (foundUser) {
-								foundUser.type = "unapprove";
 								foundUser.state = directive.data.state;
 								foundUser.approved = directive.data.approved;
 								foundUser.participated_on = directive.data.participated_on;
 							} else {
-								pr.participants.nodes.push({
-									user: {
-										uuid: uuid,
-										links: {
-											avatar: {
-												href: "foobar",
-											},
-										},
-									},
-									type: "unapprove", // TODO
-									state: directive.data.state,
-									approved: directive.data.approved,
-									participated_on: directive.data.participated_on,
-									approvalStatus: "unapprove",
-								} as any); // TODO
+								//There is no else; if the user isn't found, this is an error because to unapprove something they must already be in the participant array
+								console.log("Error: a not found user cannot unapprove"); //TODO: fix this
 							}
 						} else if (directive.type === "reviewSubmitted") {
 							//This is for request changes

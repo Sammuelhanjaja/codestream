@@ -27,29 +27,60 @@ export const PullRequestReviewButton = (props: Props) => {
 		},
 	};
 
+	let initialApprovalStatus;
+	let initialRequestStatus;
+
+	const currentUser = props.pullRequest.viewer.id;
+	if (props.pullRequest.participants.nodes.length !== 0) {
+		const currentUserInfo = props.pullRequest.participants.nodes.find(
+			_ => _.user?.account_id === currentUser
+		);
+		if (currentUserInfo?.approved) {
+			initialApprovalStatus = mapping["approve"];
+		} else {
+			initialApprovalStatus = mapping["unapprove"];
+		}
+		if (currentUserInfo?.state) {
+			initialRequestStatus = mapping["changes-requested"];
+		} else {
+			initialRequestStatus = mapping["request-changes"];
+		}
+	} else {
+		initialApprovalStatus = mapping["unapprove"];
+		initialRequestStatus = mapping["request-changes"];
+	}
+
 	const [requestType, setRequestType] = useState<{
 		icon: string;
 		text: string;
 		requestedState: string;
-	}>(mapping[props.pullRequest.requestStatus]);
+	}>(initialRequestStatus);
 	const [approvalType, setApprovalType] = useState<{
 		icon: string;
 		text: string;
 		requestedState: string;
-	}>(mapping[props.pullRequest.approvalStatus]);
+	}>(initialApprovalStatus);
 
 	useDidMount(() => {
-		if (props.pullRequest.approvalStatus === "approve") {
-			setApprovalType(mapping["approve"]);
-		}
-		if (props.pullRequest.approvalStatus === "unapprove") {
-			setApprovalType(mapping["unapprove"]);
-		}
-		if (props.pullRequest.requestStatus === "request-changes") {
-			setRequestType(mapping["request-changes"]);
-		}
-		if (props.pullRequest.requestStatus === "changes-requested") {
-			setRequestType(mapping["changes-requested"]);
+		//check if the viewer has already approved this pull request or not
+		const currentUser = props.pullRequest.viewer.id;
+		if (props.pullRequest.participants.nodes.length !== 0) {
+			const currentUserInfo = props.pullRequest.participants.nodes.find(
+				_ => _.user?.account_id === currentUser
+			);
+			if (currentUserInfo?.approved) {
+				setApprovalType(mapping["approve"]); //user has already approved this pullrequest
+			} else {
+				setApprovalType(mapping["unapprove"]); //user has not approved this pullrequest
+			}
+			if (currentUserInfo?.state === "changes-requested") {
+				setRequestType(mapping["changes-requested"]); //user has requested changes on this pull request
+			} else {
+				setRequestType(mapping["request-changes"]); //user has not requested changes on this pull request already
+			}
+		} else {
+			setApprovalType(mapping["unapprove"]); //if this user isn't in the participants list yet, then they haven't approved
+			setRequestType(mapping["request-changes"]); //if this user isn't in the participants list yet, then they haven't requeted changes
 		}
 	});
 
@@ -61,6 +92,7 @@ export const PullRequestReviewButton = (props: Props) => {
 					eventType: value,
 					pullRequestId: props.pullRequest.id,
 					userId: props.pullRequest.viewer.id,
+					participants: props.pullRequest.participants.nodes,
 				},
 			})
 		);
