@@ -845,11 +845,11 @@ const providerPullRequestsSlice = createSlice({
 							//this is for approve
 							// go through the array of participants, match the uuid, then do update
 							const uuid = directive.data.user.account_id;
-							const foundUser = pr.participants.nodes.find(_ => _.user?.account_id === uuid);
-							if (foundUser) {
-								foundUser.state = directive.data.state;
-								foundUser.approved = directive.data.approved;
-								foundUser.participated_on = directive.data.participated_on;
+							const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+							if (foundUser != -1) {
+								pr.participants.nodes[foundUser].state = directive.data.state;
+								pr.participants.nodes[foundUser].approved = directive.data.approved;
+								pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
 							} else {
 								pr.participants.nodes.push({
 									user: {
@@ -868,11 +868,11 @@ const providerPullRequestsSlice = createSlice({
 						} else if (directive.type === "removeApprovedBy") {
 							//this is for unapprove
 							const uuid = directive.data.user.account_id;
-							const foundUser = pr.participants.nodes.find(_ => _.user?.account_id === uuid);
-							if (foundUser) {
-								foundUser.state = directive.data.state;
-								foundUser.approved = directive.data.approved;
-								foundUser.participated_on = directive.data.participated_on;
+							const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+							if (foundUser != -1) {
+								pr.participants.nodes[foundUser].state = directive.data.state;
+								pr.participants.nodes[foundUser].approved = directive.data.approved;
+								pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
 							} else {
 								//There is no else; if the user isn't found, this is an error because to unapprove something they must already be in the participant array
 								console.log("Error: a not found user cannot unapprove"); //TODO: fix this

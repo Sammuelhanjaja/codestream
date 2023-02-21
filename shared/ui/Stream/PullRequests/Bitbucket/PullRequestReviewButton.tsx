@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import Icon from "../../Icon";
 import { api } from "../../../store/providerPullRequests/thunks";
-import { useAppDispatch, useDidMount } from "@codestream/webview/utilities/hooks";
+import { useAppDispatch } from "@codestream/webview/utilities/hooks";
 import { FetchThirdPartyPullRequestPullRequest } from "@codestream/protocols/agent";
 import Button from "../../Button";
 
@@ -27,8 +27,8 @@ export const PullRequestReviewButton = (props: Props) => {
 		},
 	};
 
-	let initialApprovalStatus;
-	let initialRequestStatus;
+	let approvalStatus;
+	let requestStatus;
 
 	const currentUser = props.pullRequest.viewer.id;
 	if (props.pullRequest.participants.nodes.length !== 0) {
@@ -36,53 +36,53 @@ export const PullRequestReviewButton = (props: Props) => {
 			_ => _.user?.account_id === currentUser
 		);
 		if (currentUserInfo?.approved) {
-			initialApprovalStatus = mapping["approve"];
+			approvalStatus = mapping["approve"];
 		} else {
-			initialApprovalStatus = mapping["unapprove"];
+			approvalStatus = mapping["unapprove"];
 		}
 		if (currentUserInfo?.state) {
-			initialRequestStatus = mapping["changes-requested"];
+			requestStatus = mapping["changes-requested"];
 		} else {
-			initialRequestStatus = mapping["request-changes"];
+			requestStatus = mapping["request-changes"];
 		}
 	} else {
-		initialApprovalStatus = mapping["unapprove"];
-		initialRequestStatus = mapping["request-changes"];
+		approvalStatus = mapping["unapprove"];
+		requestStatus = mapping["request-changes"];
 	}
 
-	const [requestType, setRequestType] = useState<{
-		icon: string;
-		text: string;
-		requestedState: string;
-	}>(initialRequestStatus);
-	const [approvalType, setApprovalType] = useState<{
-		icon: string;
-		text: string;
-		requestedState: string;
-	}>(initialApprovalStatus);
+	// const [requestType, setRequestType] = useState<{
+	// 	icon: string;
+	// 	text: string;
+	// 	requestedState: string;
+	// }>(initialRequestStatus);
+	// const [approvalType, setApprovalType] = useState<{
+	// 	icon: string;
+	// 	text: string;
+	// 	requestedState: string;
+	// }>(initialApprovalStatus);
 
-	useDidMount(() => {
-		//check if the viewer has already approved this pull request or not
-		const currentUser = props.pullRequest.viewer.id;
-		if (props.pullRequest.participants.nodes.length !== 0) {
-			const currentUserInfo = props.pullRequest.participants.nodes.find(
-				_ => _.user?.account_id === currentUser
-			);
-			if (currentUserInfo?.approved) {
-				setApprovalType(mapping["approve"]); //user has already approved this pullrequest
-			} else {
-				setApprovalType(mapping["unapprove"]); //user has not approved this pullrequest
-			}
-			if (currentUserInfo?.state === "changes-requested") {
-				setRequestType(mapping["changes-requested"]); //user has requested changes on this pull request
-			} else {
-				setRequestType(mapping["request-changes"]); //user has not requested changes on this pull request already
-			}
-		} else {
-			setApprovalType(mapping["unapprove"]); //if this user isn't in the participants list yet, then they haven't approved
-			setRequestType(mapping["request-changes"]); //if this user isn't in the participants list yet, then they haven't requeted changes
-		}
-	});
+	// useDidMount(() => {
+	// 	//check if the viewer has already approved this pull request or not
+	// 	const currentUser = props.pullRequest.viewer.id;
+	// 	if (props.pullRequest.participants.nodes.length !== 0) {
+	// 		const currentUserInfo = props.pullRequest.participants.nodes.find(
+	// 			_ => _.user?.account_id === currentUser
+	// 		);
+	// 		if (currentUserInfo?.approved) {
+	// 			setApprovalType(mapping["approve"]); //user has already approved this pullrequest
+	// 		} else {
+	// 			setApprovalType(mapping["unapprove"]); //user has not approved this pullrequest
+	// 		}
+	// 		if (currentUserInfo?.state === "changes-requested") {
+	// 			setRequestType(mapping["changes-requested"]); //user has requested changes on this pull request
+	// 		} else {
+	// 			setRequestType(mapping["request-changes"]); //user has not requested changes on this pull request already
+	// 		}
+	// 	} else {
+	// 		setApprovalType(mapping["unapprove"]); //if this user isn't in the participants list yet, then they haven't approved
+	// 		setRequestType(mapping["request-changes"]); //if this user isn't in the participants list yet, then they haven't requeted changes
+	// 	}
+	// });
 
 	const submitReview = async (value: string) => {
 		dispatch(
@@ -104,12 +104,12 @@ export const PullRequestReviewButton = (props: Props) => {
 				<Button
 					disabled={props.pullRequest.viewerDidAuthor}
 					onClick={e => {
-						submitReview(approvalType.requestedState);
+						submitReview(approvalStatus.requestedState);
 					}}
 				>
 					<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-						name={approvalType.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
-						title={approvalType.text} //text that shows to user when they hover, can be either Approve of Unapprove
+						name={approvalStatus.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
+						title={approvalStatus.text} //text that shows to user when they hover, can be either Approve of Unapprove
 						trigger={["hover"]}
 						delay={1}
 						placement="bottom"
@@ -120,12 +120,12 @@ export const PullRequestReviewButton = (props: Props) => {
 				<Button
 					disabled={props.pullRequest.viewerDidAuthor}
 					onClick={e => {
-						submitReview(requestType.requestedState);
+						submitReview(requestStatus.requestedState);
 					}}
 				>
 					<Icon // if it's the person's own PR, they cannot request changes, should be grayed out. If changes are requested, it should show that
-						name={requestType.icon}
-						title={requestType.text} //text that shows to user when hover, can be either Changes Requested or Request Changes
+						name={requestStatus.icon}
+						title={requestStatus.text} //text that shows to user when hover, can be either Changes Requested or Request Changes
 						trigger={["hover"]}
 						delay={1}
 						placement="bottom"
