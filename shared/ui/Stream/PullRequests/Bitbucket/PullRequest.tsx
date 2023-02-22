@@ -690,29 +690,8 @@ export const PullRequest = () => {
 										/>
 									</span>
 								)}
-								{isLoadingBranch ? (
-									<Icon name="sync" className="spin" />
-								) : (
-									<span className={cantCheckoutReason ? "disabled" : ""}>
-										<Icon
-											title={
-												<>
-													Checkout Branch
-													{cantCheckoutReason && (
-														<div className="subtle smaller" style={{ maxWidth: "200px" }}>
-															Disabled: {cantCheckoutReason}
-														</div>
-													)}
-												</>
-											}
-											trigger={["hover"]}
-											delay={1}
-											onClick={checkout}
-											placement="bottom"
-											name="git-branch"
-										/>
-									</span>
-								)}
+								<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
+
 								{/* <InlineMenu
 									title="View Settings"
 									noChevronDown
@@ -754,24 +733,6 @@ export const PullRequest = () => {
 										},
 									]}
 								></InlineMenu> */}
-								<span>
-									<Icon
-										title="Reload"
-										trigger={["hover"]}
-										delay={1}
-										onClick={() => {
-											if (isLoadingPR) {
-												console.warn("reloading pr, cancelling...");
-												return;
-											}
-											reload("Reloading...");
-										}}
-										placement="bottom"
-										className={`${isLoadingPR ? "spin" : ""}`}
-										name="refresh"
-									/>
-								</span>
-								<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
 							</PRActionButtons>
 						</PRStatus>
 						{derivedState.currentPullRequest &&
