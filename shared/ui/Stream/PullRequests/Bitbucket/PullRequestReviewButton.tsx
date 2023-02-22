@@ -40,7 +40,7 @@ export const PullRequestReviewButton = (props: Props) => {
 		} else {
 			approvalStatus = mapping["unapprove"];
 		}
-		if (currentUserInfo?.state) {
+		if (currentUserInfo?.state === "changes_requested") {
 			requestStatus = mapping["changes-requested"];
 		} else {
 			requestStatus = mapping["request-changes"];
@@ -49,40 +49,6 @@ export const PullRequestReviewButton = (props: Props) => {
 		approvalStatus = mapping["unapprove"];
 		requestStatus = mapping["request-changes"];
 	}
-
-	// const [requestType, setRequestType] = useState<{
-	// 	icon: string;
-	// 	text: string;
-	// 	requestedState: string;
-	// }>(initialRequestStatus);
-	// const [approvalType, setApprovalType] = useState<{
-	// 	icon: string;
-	// 	text: string;
-	// 	requestedState: string;
-	// }>(initialApprovalStatus);
-
-	// useDidMount(() => {
-	// 	//check if the viewer has already approved this pull request or not
-	// 	const currentUser = props.pullRequest.viewer.id;
-	// 	if (props.pullRequest.participants.nodes.length !== 0) {
-	// 		const currentUserInfo = props.pullRequest.participants.nodes.find(
-	// 			_ => _.user?.account_id === currentUser
-	// 		);
-	// 		if (currentUserInfo?.approved) {
-	// 			setApprovalType(mapping["approve"]); //user has already approved this pullrequest
-	// 		} else {
-	// 			setApprovalType(mapping["unapprove"]); //user has not approved this pullrequest
-	// 		}
-	// 		if (currentUserInfo?.state === "changes-requested") {
-	// 			setRequestType(mapping["changes-requested"]); //user has requested changes on this pull request
-	// 		} else {
-	// 			setRequestType(mapping["request-changes"]); //user has not requested changes on this pull request already
-	// 		}
-	// 	} else {
-	// 		setApprovalType(mapping["unapprove"]); //if this user isn't in the participants list yet, then they haven't approved
-	// 		setRequestType(mapping["request-changes"]); //if this user isn't in the participants list yet, then they haven't requeted changes
-	// 	}
-	// });
 
 	const submitReview = async (value: string) => {
 		dispatch(
@@ -99,7 +65,7 @@ export const PullRequestReviewButton = (props: Props) => {
 	};
 
 	return (
-		<div>
+		<>
 			<span>
 				<Button
 					disabled={props.pullRequest.viewerDidAuthor}
@@ -145,6 +111,6 @@ export const PullRequestReviewButton = (props: Props) => {
 					}}
 				/>
 			</span>
-		</div>
+		</>
 	);
 };

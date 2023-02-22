@@ -20,7 +20,6 @@ import { Link } from "../../Link";
 import { Tab, Tabs } from "../../../src/components/Tabs";
 import copy from "copy-to-clipboard";
 import { GHOST } from "../../PullRequestTimelineItems";
-import { InlineMenu } from "../../../src/components/controls/InlineMenu";
 import {
 	clearCurrentPullRequest,
 	setCurrentPullRequest,
@@ -61,7 +60,6 @@ import {
 import Tooltip from "../../Tooltip";
 import { PullRequestFileComments } from "../../PullRequestFileComments";
 import Timestamp from "../../Timestamp";
-import { setUserPreference } from "../../actions";
 import ScrollBox from "../../ScrollBox";
 import { PullRequestFilesChangedTab } from "../../PullRequestFilesChangedTab";
 import { PullRequestCommitsTab } from "../../PullRequestCommitsTab";
@@ -715,7 +713,7 @@ export const PullRequest = () => {
 										/>
 									</span>
 								)}
-								<InlineMenu
+								{/* <InlineMenu
 									title="View Settings"
 									noChevronDown
 									noFocusOnSelect
@@ -755,7 +753,7 @@ export const PullRequest = () => {
 												),
 										},
 									]}
-								></InlineMenu>
+								></InlineMenu> */}
 								<span>
 									<Icon
 										title="Reload"

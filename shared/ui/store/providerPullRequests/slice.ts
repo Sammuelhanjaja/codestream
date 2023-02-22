@@ -877,33 +877,40 @@ const providerPullRequestsSlice = createSlice({
 								//There is no else; if the user isn't found, this is an error because to unapprove something they must already be in the participant array
 								console.log("Error: a not found user cannot unapprove"); //TODO: fix this
 							}
-						} else if (directive.type === "reviewSubmitted") {
+						} else if (directive.type === "addRequestChanges") {
 							//This is for request changes
-							const user_id = directive.data.user.uuid;
-							for (const item in directive.data) {
-								if (pr.participants.nodes.includes(user_id)) {
-									pr.participants.nodes[item] = directive.data[item];
-								}
+							const uuid = directive.data.user.account_id;
+							const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+							if (foundUser !== -1) {
+								pr.participants.nodes[foundUser].state = directive.data.state;
+								pr.participants.nodes[foundUser].approved = directive.data.approved;
+								pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+							} else {
+								pr.participants.nodes.push({
+									user: {
+										account_id: uuid,
+										links: {
+											avatar: {
+												href: directive.data.user.links.avatar.href,
+											},
+										},
+									},
+									state: directive.data.state,
+									approved: directive.data.approved,
+									participated_on: directive.data.participated_on,
+								} as any); // TODO
 							}
 						} else if (directive.type === "removePendingReview") {
 							//removing the requested changes
-							const user_id = directive.data.user.uuid;
-							for (const item in directive.data) {
-								if (pr.participants.nodes.includes(user_id)) {
-									pr.participants.nodes[item] = directive.data[item];
-								}
-								if (directive.data.includes("isApproved")) {
-									pr[item] = directive.data[item];
-								}
-								if (directive.data.includes("isRequested")) {
-									pr[item] = directive.data[item];
-								}
-								if (directive.data.includes("approvalStatus")) {
-									pr[item] = directive.data[item];
-								}
-								if (directive.data.includes("requestStatus")) {
-									pr[item] = directive.data[item];
-								}
+							const uuid = directive.data.user.account_id;
+							const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+							if (foundUser !== -1) {
+								pr.participants.nodes[foundUser].state = directive.data.state;
+								pr.participants.nodes[foundUser].approved = directive.data.approved;
+								pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+							} else {
+								//There is no else; if the user isn't found, this is an error because to unrequest something they must already be in the participant array
+								console.log("Error: a not found user cannot unrequest changes"); //TODO: fix this
 							}
 						} else if (directive.type === "addNode") {
 							pr.comments = pr.comments || [];

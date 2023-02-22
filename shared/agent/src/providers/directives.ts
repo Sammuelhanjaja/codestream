@@ -8,6 +8,7 @@ export interface Directive {
 		| "addPullRequestComment"
 		| "addReaction"
 		| "addReply"
+		| "addRequestChanges"
 		| "addReview"
 		| "addReviewCommentNodes"
 		| "addReviewThreads"

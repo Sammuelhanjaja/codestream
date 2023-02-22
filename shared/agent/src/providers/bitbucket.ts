@@ -1030,9 +1030,9 @@ export class BitbucketProvider
 					repoOwner: repoWithOwnerSplit[0],
 					repoName: repoWithOwnerSplit[1],
 					providerId: this.providerConfig.id,
-
 					branchProtectionRules: undefined,
 					pullRequest: {
+						createdAt: pr.body.created_on,
 						baseRefOid: pr.body.destination.commit.hash,
 						headRefOid: pr.body.source.commit.hash,
 						author: {
@@ -1068,10 +1068,6 @@ export class BitbucketProvider
 						url: pr.body.links.html.href,
 						viewer: viewer,
 						viewerDidAuthor: viewerDidAuthor, //TODO
-						// isApproved: isApproved,
-						// isRequested: isRequested,
-						// approvalStatus: thing1,
-						// requestStatus: thing2,
 					} as any, //TODO: make this work
 				},
 			};
@@ -1237,8 +1233,6 @@ export class BitbucketProvider
 			response = await this.delete<BitbucketSubmitReviewRequest>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/request-changes`
 			);
-			// const isApproved = this.isPRApproved(request.participants);
-			// const isRequested = this.isChangesRequested(request.participants);
 			//bitbucket doesn't return anything on this delete
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1261,13 +1255,48 @@ export class BitbucketProvider
 					},
 				],
 			});
-		} else if (request.eventType === "unapprove") {
+		}
+		if (request.eventType === "request-changes") {
+			response = await this.post<
+				BitbucketSubmitReviewRequest,
+				BitbucketSubmitReviewRequestResponse
+			>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${request.eventType}`,
+				payload
+			);
+
+			return this.handleResponse(request.pullRequestId, {
+				directives: [
+					{
+						type: "updatePullRequest",
+						data: {
+							updatedAt: Dates.toUtcIsoNow(),
+						},
+					},
+					{
+						type: "addRequestChanges",
+						data: {
+							user: {
+								account_id: response.body.user.account_id,
+								links: {
+									avatar: {
+										href: response.body.user.links.avatar.href,
+									},
+								},
+							},
+							approved: response.body.approved,
+							state: response.body.state,
+							participated_on: response.body.participated_on,
+						},
+					},
+				],
+			});
+		}
+		if (request.eventType === "unapprove") {
 			//to unapprove you have to run a delete
 			response = await this.delete<BitbucketSubmitReviewRequest>(
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/approve`
 			);
-			// const isApproved = this.isPRApproved(request.participants);
-			// const isRequested = this.isChangesRequested(request.participants);
 			//bitbucket doesn't return anything on this delete
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1290,7 +1319,8 @@ export class BitbucketProvider
 					},
 				],
 			});
-		} else {
+		}
+		if (request.eventType === "approve") {
 			response = await this.post<
 				BitbucketSubmitReviewRequest,
 				BitbucketSubmitReviewRequestResponse
@@ -1298,9 +1328,6 @@ export class BitbucketProvider
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/${request.eventType}`,
 				payload
 			);
-
-			// const isApproved = this.isPRApproved(request.participants);
-			// const isRequested = this.isChangesRequested(request.participants);
 
 			return this.handleResponse(request.pullRequestId, {
 				directives: [
@@ -1311,7 +1338,7 @@ export class BitbucketProvider
 						},
 					},
 					{
-						type: request.eventType === "approve" ? "addApprovedBy" : "reviewSubmitted", //request changes
+						type: "addApprovedBy",
 						data: {
 							user: {
 								account_id: response.body.user.account_id,
@@ -1329,6 +1356,7 @@ export class BitbucketProvider
 				],
 			});
 		}
+		throw new Error(`Unknown request type: ${request.eventType}`);
 	}
 
 	async getPullRequestFilesChanged(request: {

@@ -696,16 +696,16 @@ export interface FetchThirdPartyPullRequestPullRequest {
 				links?: {
 					avatar?: {
 						href?: string;
-					}
-				}
+					};
+				};
 				type?: string;
 				uuid?: string;
 				account_id?: string;
 				nickname?: string;
-			}
+			};
 			role?: string;
 			approved?: boolean;
-			state?: string;
+			state?: "changes_requested" | "approve" | "null";
 			participated_on?: string;
 		}[];
 	};
