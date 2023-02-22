@@ -921,10 +921,27 @@ export class BitbucketProvider
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/commits`
 			);
 
-			const commit_count = commits.body.values.length;
-			// console.log("**********************commit_count = ", commit_count, "****************************")
+			//get all users who have a permission of greater than read
+			const permissions = await this.get<any>(`/user/permissions/repositories?q=permission>"read"`); //TODO: fix any
 
 			const userResponse = await this.getCurrentUser();
+
+			const isViewerCanUpdate = () => {
+				if (
+					permissions.body.values.find(
+						(_: { user: { account_id: string } }) => _.user.account_id === userResponse.account_id
+					)
+				) {
+					return true;
+				} else {
+					return false;
+				}
+			};
+
+			const viewerCanUpdate = isViewerCanUpdate();
+
+			const commit_count = commits.body.values.length;
+			// console.log("**********************commit_count = ", commit_count, "****************************")
 
 			const listToTree: any = (
 				arr: { id: string; replies: any[]; parent: { id: string } }[] = []
@@ -981,27 +998,6 @@ export class BitbucketProvider
 				repos: allRepos.repos,
 			});
 
-			// let thing1;
-			// let thing2;
-			// //check if pr is requested or not already
-			// const isRequested = this.isChangesRequested(pr.body.participants);
-			// //check if approved or not
-			// const isApproved = this.isPRApproved(pr.body.participants); //true/false
-
-			// if (!isRequested && !isApproved) {
-			// 	// it's not approved and not requested, should show thumbsdown and text approve as well as question and Request Changes
-			// 	thing1 = "unapprove";
-			// 	thing2 = "request-changes";
-			// } else if (isRequested && !isApproved) {
-			// 	//it's not aproved but changes are requested, should show thumbs down and text approve as well as question and Changes Requested
-			// 	thing1 = "unapprove";
-			// 	thing2 = "changes-requested";
-			// } else if (isApproved) {
-			// 	//it's approved, therefore there cannot be any request changes
-			// 	thing1 = "approve";
-			// 	thing2 = "request-changes";
-			// }
-
 			const isViewerDidAuthor = () => {
 				if (userResponse.account_id === pr.body.author.account_id) {
 					return true;
@@ -1035,6 +1031,8 @@ export class BitbucketProvider
 						createdAt: pr.body.created_on,
 						baseRefOid: pr.body.destination.commit.hash,
 						headRefOid: pr.body.source.commit.hash,
+						baseRefName: pr.body.destination.branch.name,
+						headRefName: pr.body.source.branch.name,
 						author: {
 							login: pr.body.author.display_name,
 							avatarUrl: pr.body.author.links.avatar,
@@ -1067,7 +1065,8 @@ export class BitbucketProvider
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
-						viewerDidAuthor: viewerDidAuthor, //TODO
+						viewerDidAuthor: viewerDidAuthor,
+						viewerCanUpdate: viewerCanUpdate,
 					} as any, //TODO: make this work
 				},
 			};
@@ -1905,6 +1904,77 @@ export class BitbucketProvider
 			if (directive.type === "updatePullRequest") {
 				for (const key in directive.data) {
 					(pr as any)[key] = directive.data[key];
+				}
+			} else if (directive.type === "addApprovedBy") {
+				//this is for approve
+				// go through the array of participants, match the uuid, then do update
+				const uuid = directive.data.user.account_id;
+				const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+				if (foundUser != -1) {
+					pr.participants.nodes[foundUser].state = directive.data.state;
+					pr.participants.nodes[foundUser].approved = directive.data.approved;
+					pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+				} else {
+					pr.participants.nodes.push({
+						user: {
+							account_id: uuid,
+							links: {
+								avatar: {
+									href: directive.data.user.links.avatar.href,
+								},
+							},
+						},
+						state: directive.data.state,
+						approved: directive.data.approved,
+						participated_on: directive.data.participated_on,
+					} as any); // TODO
+				}
+			} else if (directive.type === "removeApprovedBy") {
+				//this is for unapprove
+				const uuid = directive.data.user.account_id;
+				const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+				if (foundUser != -1) {
+					pr.participants.nodes[foundUser].state = directive.data.state;
+					pr.participants.nodes[foundUser].approved = directive.data.approved;
+					pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+				} else {
+					//There is no else; if the user isn't found, this is an error because to unapprove something they must already be in the participant array
+					console.log("Error: a not found user cannot unapprove"); //TODO: fix this
+				}
+			} else if (directive.type === "addRequestChanges") {
+				//This is for request changes
+				const uuid = directive.data.user.account_id;
+				const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+				if (foundUser !== -1) {
+					pr.participants.nodes[foundUser].state = directive.data.state;
+					pr.participants.nodes[foundUser].approved = directive.data.approved;
+					pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+				} else {
+					pr.participants.nodes.push({
+						user: {
+							account_id: uuid,
+							links: {
+								avatar: {
+									href: directive.data.user.links.avatar.href,
+								},
+							},
+						},
+						state: directive.data.state,
+						approved: directive.data.approved,
+						participated_on: directive.data.participated_on,
+					} as any); // TODO
+				}
+			} else if (directive.type === "removePendingReview") {
+				//removing the requested changes
+				const uuid = directive.data.user.account_id;
+				const foundUser = pr.participants.nodes.findIndex(_ => _.user?.account_id === uuid);
+				if (foundUser !== -1) {
+					pr.participants.nodes[foundUser].state = directive.data.state;
+					pr.participants.nodes[foundUser].approved = directive.data.approved;
+					pr.participants.nodes[foundUser].participated_on = directive.data.participated_on;
+				} else {
+					//There is no else; if the user isn't found, this is an error because to unrequest something they must already be in the participant array
+					console.log("Error: a not found user cannot unrequest changes"); //TODO: fix this
 				}
 			} else if (directive.type === "addNode") {
 				pr.comments = pr.comments || [];

@@ -19,7 +19,7 @@ import Icon from "../../Icon";
 import { Link } from "../../Link";
 import { Tab, Tabs } from "../../../src/components/Tabs";
 import copy from "copy-to-clipboard";
-import { GHOST } from "../../PullRequestTimelineItems";
+import { GHOST } from "./PullRequestTimelineItems";
 import {
 	clearCurrentPullRequest,
 	setCurrentPullRequest,
@@ -662,14 +662,14 @@ export const PullRequest = () => {
 									</Link>
 									{" from "}
 									<Link href={`${pr.url}`}>
-										<PRBranch>{pr.title}</PRBranch>
+										<PRBranch>{pr.headRefName}</PRBranch>
 									</Link>{" "}
 									<Icon
 										title="Copy"
 										placement="bottom"
 										name="copy"
 										className="clickable"
-										onClick={e => copy(pr.headRefName)}
+										onClick={e => copy(pr.url)}
 									/>
 								</PRAction>
 								<Timestamp time={pr.createdAt} relative />

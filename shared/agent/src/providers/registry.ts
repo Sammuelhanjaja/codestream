@@ -134,11 +134,6 @@ const PR_QUERIES: PRProviderQueries = {
 	// 		name: "is waiting on your review",
 	// 		query: `is:pr is:open review-requested:@me -author:@me`, //TODO: fix for bitbucket
 	// 	},
-	// 	{
-	// 		providerId: "bitbucket*org",
-	// 		name: "was assigned to you",
-	// 		query: `is:pr is:open assignee:@me -author:@me`, //TODO: fix for bitbucket
-	// 	},
 	// ],
 };
 
@@ -883,20 +878,12 @@ export class ThirdPartyProviderRegistry {
 			],
 			"bitbucket*org": [
 				//https://api.bitbucket.org//2.0/
-				// {
-				// 	providerId: "bitbucket*org",
-				// 	name: "Waiting on my Review",
-				// 	// TODO - @me @workspace @repo
-				// 	query: ``,
-				// 	hidden: false
-				// },
-				// {
-				// 	providerId: "bitbucket*org",
-				// 	name: "Assigned to Me",
-				// 	// TODO - how should this be formatted?
-				// 	query: `repositories/<foo>>/<bar>/pullrequests/<number>?fields=reviewers`, //this is per pullrequest
-				// 	hidden: false
-				// },
+				{
+					providerId: "bitbucket*org",
+					name: "Waiting on my Review",
+					query: ``,
+					hidden: false,
+				},
 				{
 					providerId: "bitbucket*org",
 					name: "Created by Me",

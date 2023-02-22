@@ -59,7 +59,7 @@ import {
 	PRTimelineItem,
 } from "../../PullRequestComponents";
 import { ColorDonut, PullRequestReviewStatus } from "../../PullRequestReviewStatus";
-import { GHOST, PullRequestTimelineItems } from "../../PullRequestTimelineItems";
+import { GHOST, PullRequestTimelineItems } from "./PullRequestTimelineItems";
 import Timestamp from "../../Timestamp";
 import Tooltip from "../../Tooltip";
 
