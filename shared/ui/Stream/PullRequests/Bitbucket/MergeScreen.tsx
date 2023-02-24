@@ -1,17 +1,13 @@
 import React, { useState } from "react";
-import {
-	api,
-} from "../../../store/providerPullRequests/thunks";
+import { api } from "../../../store/providerPullRequests/thunks";
 import { useAppDispatch } from "@codestream/webview/utilities/hooks";
-import {
-	FetchThirdPartyPullRequestPullRequest,
-} from "@codestream/protocols/agent";
+import { FetchThirdPartyPullRequestPullRequest } from "@codestream/protocols/agent";
 
-
-import { ButtonRow, Dialog } from "../../../src/components/Dialog";
+import { Dialog } from "../../../src/components/Dialog";
 import { closeModal } from "../../actions";
 import Button from "../../Button";
 import { TextInput } from "@codestream/webview/Authentication/TextInput";
+import { InlineMenu } from "@codestream/webview/src/components/controls/InlineMenu";
 
 interface Props {
 	pr: FetchThirdPartyPullRequestPullRequest;
@@ -50,18 +46,31 @@ export const MergeScreen = (props: Props) => {
 							<label>Commit message</label>
 							<TextInput name="message" value={mergeMessage} onChange={setMergeMessage} />
 						</div>
-						{/* <Dropdown selectedValue={""} items={[]}>
-							
-
-								</Dropdown> */}
-
-						<ButtonRow>
-							<Button
-							// onChange={mergePullRequest()} isLoading={loading}
+						<div style={{ margin: "5px 0" }}>
+							<InlineMenu
+								items={[
+									{
+										label: "Merge commit",
+										key: "merge_commit",
+										action: () => setMergeMethod("merge_commit"),
+									},
+									{
+										label: "Squash",
+										key: "squash",
+										action: () => setMergeMethod("squash"),
+									},
+									{
+										label: "Fast forward",
+										key: "fast_forward",
+										action: () => setMergeMethod("fast_forward"),
+									},
+								]}
 							>
-								Merge
-							</Button>
-						</ButtonRow>
+								{"Merge commit"}
+							</InlineMenu>
+						</div>
+
+						<Button onClick={() => mergePullRequest()}>Merge</Button>
 					</div>
 				</fieldset>
 			</form>

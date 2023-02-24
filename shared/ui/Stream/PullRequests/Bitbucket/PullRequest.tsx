@@ -65,6 +65,7 @@ import { PullRequestFilesChangedTab } from "../../PullRequestFilesChangedTab";
 import { PullRequestCommitsTab } from "../../PullRequestCommitsTab";
 import { PullRequestConversationTab } from "./PullRequestConversationTab";
 import { PullRequestReviewButton } from "./PullRequestReviewButton";
+import { MergeScreen } from "./MergeScreen";
 
 const Root = styled.div`
 	@media only screen and (max-width: ${props => props.theme.breakpoint}) {
@@ -108,6 +109,7 @@ export type autoCheckedMergeabilityStatus = "UNCHECKED" | "CHECKED" | "UNKNOWN";
 
 export const PullRequest = () => {
 	const dispatch = useAppDispatch();
+	const [isOpen, setIsOpen] = useState(false);
 	const derivedState = useAppSelector((state: CodeStreamState) => {
 		const currentUser = state.users[state.session.userId!] as CSMe;
 		const team = state.teams[state.context.currentTeamId];
@@ -675,22 +677,41 @@ export const PullRequest = () => {
 								<Timestamp time={pr.createdAt} relative />
 							</PRStatusMessage>
 							<PRActionButtons>
-								{pr.viewerCanUpdate && (
-									<span>
-										<Icon
-											title="Edit Title"
-											trigger={["hover"]}
-											delay={1}
-											onClick={() => {
-												setTitle(pr.title);
-												setEditingTitle(true);
-											}}
-											placement="bottom"
-											name="pencil"
-										/>
-									</span>
+								{isOpen ? (
+									<MergeScreen pr={pr}></MergeScreen>
+								) : (
+									<>
+										{pr.viewerCanUpdate && (
+											<span>
+												<Icon
+													title="Edit Title"
+													trigger={["hover"]}
+													delay={1}
+													onClick={() => {
+														setTitle(pr.title);
+														setEditingTitle(true);
+													}}
+													placement="bottom"
+													name="pencil"
+												/>
+											</span>
+										)}
+										<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
+										<span>
+											<Icon
+												className={pr.viewerCanUpdate ? "disabled" : ""}
+												name="git-merge"
+												title="Merge"
+												trigger={["hover"]}
+												delay={1}
+												placement="bottom"
+												onClick={e => {
+													setIsOpen(true);
+												}}
+											/>
+										</span>
+									</>
 								)}
-								<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
 
 								{/* <InlineMenu
 									title="View Settings"
