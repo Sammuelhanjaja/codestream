@@ -1064,10 +1064,6 @@ export class NewRelicProvider
 	@log({
 		timed: true,
 	})
-	@lspHandler(GetObservabilityAnomaliesRequestType)
-	@log({
-		timed: true,
-	})
 	async getObservabilityAnomalies(
 		request: GetObservabilityAnomaliesRequest
 	): Promise<GetObservabilityAnomaliesResponse> {
@@ -1075,21 +1071,12 @@ export class NewRelicProvider
 			const { entityGuid } = request;
 			const { accountId } = NewRelicProvider.parseId(entityGuid)!;
 			const anomalyDetector = new AnomalyDetector(entityGuid, accountId, this.runNrql.bind(this));
-			void (await anomalyDetector.init());
-			const responseTimePromise = anomalyDetector.getResponseTimeAnomalies();
-			const errorRatePromise = anomalyDetector.getErrorRateAnomalies();
-			const throughputPromise = anomalyDetector.getThroughputAnomalies();
-
-			const [responseTime, errorRate, throughput] = await Promise.all([
-				responseTimePromise,
-				errorRatePromise,
-				throughputPromise,
-			]);
+			const result = await anomalyDetector.execute();
 
 			return {
-				responseTime: responseTime.map(_ => ({ text: _ })),
-				errorRate: errorRate.map(_ => ({ text: _ })),
-				throughput: throughput.map(_ => ({ text: _ })),
+				responseTime: result.responseTime,
+				errorRate: result.errorRate,
+				throughput: [],
 			};
 		} catch (ex) {
 			Logger.warn(ex.message);

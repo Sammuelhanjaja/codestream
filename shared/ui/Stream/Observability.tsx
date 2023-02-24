@@ -72,6 +72,7 @@ import { ObservabilityGoldenMetricDropdown } from "./ObservabilityGoldenMetricDr
 import Timestamp from "./Timestamp";
 import Tooltip from "./Tooltip";
 import { WarningBox } from "./WarningBox";
+import { ObservabilityAnomaliesWrapper } from "@codestream/webview/Stream/ObservabilityAnomaliesWrapper";
 
 interface Props {
 	paneState: PaneState;
@@ -454,7 +455,7 @@ export const Observability = React.memo((props: Props) => {
 						fetchObservabilityErrors(e.data.entityGuid, e.data.repoId);
 						fetchGoldenMetrics(e.data.entityGuid);
 						fetchServiceLevelObjectives(e.data.entityGuid);
-						// fetchAnomalies(e.data.entityGuid, e.data.repoId);
+						fetchAnomalies(e.data.entityGuid, e.data.repoId);
 					}, 2500);
 				}
 			}
@@ -486,7 +487,7 @@ export const Observability = React.memo((props: Props) => {
 	useInterval(() => {
 		fetchGoldenMetrics(expandedEntity, true);
 		fetchServiceLevelObjectives(expandedEntity);
-		// fetchAnomalies(e.data.entityGuid, e.data.repoId);
+		fetchAnomalies(expandedEntity || "", currentRepoId);
 	}, 300000);
 
 	/*
@@ -795,7 +796,7 @@ export const Observability = React.memo((props: Props) => {
 			fetchGoldenMetrics(expandedEntity, true);
 			fetchServiceLevelObjectives(expandedEntity);
 			fetchObservabilityErrors(expandedEntity, currentRepoId);
-			// fetchAnomalies(e.data.entityGuid, e.data.repoId);
+			fetchAnomalies(expandedEntity, currentRepoId);
 		}
 	}, [expandedEntity]);
 
@@ -1205,12 +1206,12 @@ export const Observability = React.memo((props: Props) => {
 																									)}
 																								</>
 																							)}
-																							{/*<ObservabilityAnomaliesWrapper*/}
-																							{/*	observabilityAnomalies={observabilityAnomalies}*/}
-																							{/*	observabilityRepo={_observabilityRepo}*/}
-																							{/*	entityGuid={ea.entityGuid}*/}
-																							{/*	noAccess={noErrorsAccess}*/}
-																							{/*/>*/}
+																							<ObservabilityAnomaliesWrapper
+																								observabilityAnomalies={observabilityAnomalies}
+																								observabilityRepo={_observabilityRepo}
+																								entityGuid={ea.entityGuid}
+																								noAccess={noErrorsAccess}
+																							/>
 																						</>
 																					</>
 																				)}

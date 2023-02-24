@@ -1,5 +1,4 @@
 import { SessionContainer } from "../../container";
-import { Logger } from "../../logger";
 import { AgentFilterNamespacesRequestType } from "@codestream/protocols/agent";
 
 interface NameValue {
@@ -9,77 +8,242 @@ interface NameValue {
 
 interface Anomaly {
 	name: string;
-	oldDuration: number;
-	newDuration: number;
+	oldValue: number;
+	newValue: number;
 	ratio: number;
 }
 
 export class AnomalyDetector {
-	private spanLookup = "";
-	private metricLookup = "";
-
 	constructor(
 		private entityGuid: string,
 		private accountId: number,
 		private _runNrql: <T>(accountId: number, nrql: string, timeout: number) => Promise<T[]>
 	) {}
 
-	async init() {
-		const namespaces = await this.getObservabilityAnomaliesNamespaces();
-		const namespaceRoots = this.getCommonRoots(namespaces);
-		this.spanLookup = namespaceRoots.map(_ => `\`code.namespace\` LIKE '${_}%'`).join(" OR ");
-		this.metricLookup = namespaceRoots
-			.map(_ => `\`metricTimesliceName\` LIKE '%/${_}%'`)
-			.join(" OR ");
+	async execute() {
+		const sampleRatesMetricLookup =
+			"(metricTimesliceName LIKE 'Java/%' OR metricTimesliceName LIKE 'Custom/%')";
+		const sampleRatesMetric = await this.getSampleRateMetric(
+			this._dataTimeFrame,
+			sampleRatesMetricLookup
+		);
+		const metricRoots = this.getCommonRoots(sampleRatesMetric.map(_ => _.name));
+		const metricLookup = metricRoots.map(_ => `\`metricTimesliceName\` LIKE '%${_}%'`).join(" OR ");
+
+		const sampleRatesSpanLookup = "(name LIKE 'Java/%' OR name LIKE 'Custom/%')";
+		const sampleRatesSpan = await this.getSampleRateSpan(
+			this._dataTimeFrame,
+			sampleRatesSpanLookup
+		);
+		const spanRoots = this.getCommonRoots(sampleRatesSpan.map(_ => _.name));
+		const spanLookup = spanRoots.map(_ => `name LIKE '${_}%'`).join(" OR ");
+		const consolidatedSampleRates = this.consolidateSampleRates(sampleRatesMetric, sampleRatesSpan);
+
+		const responseTimeAnomalies = await this.getResponseTimeAnomalies(
+			metricLookup,
+			spanLookup,
+			sampleRatesMetric,
+			sampleRatesSpan,
+			consolidatedSampleRates
+		);
+		const responseTimeFormatted = this.formatAnomaly(responseTimeAnomalies);
+		const responseTimeResult = responseTimeFormatted.map(_ => ({ text: _ }));
+
+		const errorRateAnomalies = await this.getErrorRateAnomalies(
+			metricLookup,
+			spanLookup,
+			sampleRatesMetric,
+			sampleRatesSpan,
+			consolidatedSampleRates
+		);
+		const errorRateFormatted = this.formatAnomaly(errorRateAnomalies);
+		const errorRateResult = errorRateFormatted.map(_ => ({ text: _ }));
+
+		return {
+			responseTime: responseTimeResult,
+			errorRate: errorRateResult,
+		};
+	}
+
+	private async getResponseTimeAnomalies(
+		lookupMetric: string,
+		lookupSpan: string,
+		sampleRatesMetric: NameValue[],
+		sampleRatesSpan: NameValue[],
+		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>
+	) {
+		const metricData = await this.getResponseTimeMetric(lookupMetric, this._dataTimeFrame);
+		const metricBaseline = await this.getResponseTimeMetric(lookupMetric, this._baselineTimeFrame);
+		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric);
+		const filteredMetricData = metricData.filter(metricFilter);
+		const filteredMetricBaseline = metricBaseline.filter(metricFilter);
+		const metricComparison = this.compareData(filteredMetricData, filteredMetricBaseline);
+
+		const spanData = await this.getResponseTimeSpan(lookupSpan, this._dataTimeFrame);
+		const spanBaseline = await this.getResponseTimeSpan(lookupSpan, this._baselineTimeFrame);
+		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan);
+		const filteredSpanData = spanData.filter(spanFilter);
+		const filteredSpanBaseline = spanBaseline.filter(spanFilter);
+		const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
+
+		const consolidatedComparison = this.consolidateComparisons(
+			consolidatedSampleRates,
+			metricComparison,
+			spanComparison
+		);
+
+		const top3 = consolidatedComparison.slice(0, 3);
+		return top3;
+	}
+
+	private async getErrorRateAnomalies(
+		lookupMetric: string,
+		lookupSpan: string,
+		sampleRatesMetric: NameValue[],
+		sampleRatesSpan: NameValue[],
+		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>
+	) {
+		const metricData = await this.getErrorRateMetric(lookupMetric, this._dataTimeFrame);
+		const metricBaseline = await this.getErrorRateMetric(lookupMetric, this._baselineTimeFrame);
+		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric);
+		const metricTransformer = this.getErrorRateTransformer(sampleRatesMetric);
+		const filteredMetricData = metricData.filter(metricFilter).map(metricTransformer);
+		const filteredMetricBaseline = metricBaseline.filter(metricFilter).map(metricTransformer);
+		const metricComparison = this.compareData(filteredMetricData, filteredMetricBaseline);
+
+		const spanData = await this.getErrorRateSpan(lookupSpan, this._dataTimeFrame);
+		const spanBaseline = await this.getErrorRateSpan(lookupSpan, this._baselineTimeFrame);
+		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan);
+		const spanTransformer = this.getErrorRateTransformer(sampleRatesSpan);
+		const filteredSpanData = spanData.filter(spanFilter).map(spanTransformer);
+		const filteredSpanBaseline = spanBaseline.filter(spanFilter).map(spanTransformer);
+		const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
+
+		const consolidatedComparison = this.consolidateComparisons(
+			consolidatedSampleRates,
+			metricComparison,
+			spanComparison
+		);
+
+		const top3 = consolidatedComparison.slice(0, 3);
+		return top3;
+	}
+
+	private getSampleRateFilterPredicate(sampleRates: NameValue[]) {
+		return (data: NameValue) => {
+			const sampleRate = sampleRates.find(sampleRate => data.name === sampleRate.name);
+			return sampleRate && sampleRate.value >= 1; // >= 1 rpm
+		};
+	}
+
+	private getErrorRateTransformer(sampleRates: NameValue[]) {
+		return (data: NameValue) => {
+			const sampleRate = sampleRates.find(sampleRate => data.name === sampleRate.name);
+			return {
+				name: data.name,
+				value: data.value / (sampleRate?.value || 1),
+			};
+		};
+	}
+
+	private consolidateComparisons(
+		consolidatedSampleRates: Map<
+			string,
+			{
+				span?: NameValue;
+				metric?: NameValue;
+			}
+		>,
+		responseTimeMetricComparison: {
+			name: string;
+			oldValue: number;
+			newValue: number;
+			ratio: number;
+		}[],
+		responseTimeSpanComparison: {
+			name: string;
+			oldValue: number;
+			newValue: number;
+			ratio: number;
+		}[]
+	) {
+		const consolidatedComparison: {
+			name: string;
+			source: string;
+			oldValue: number;
+			newValue: number;
+			ratio: number;
+		}[] = [];
+
+		for (const [symbolStr, consolidatedSampleRate] of consolidatedSampleRates.entries()) {
+			const useMetric =
+				consolidatedSampleRate.metric &&
+				(!consolidatedSampleRate.span ||
+					consolidatedSampleRate.metric.value / consolidatedSampleRate.span.value >= 0.8);
+			if (useMetric) {
+				const metricComparison = responseTimeMetricComparison.find(_ => {
+					const symbol = this.extractSymbol(_.name);
+					const mySymbolStr = symbol.clazz + "/" + symbol.method;
+					return symbolStr === mySymbolStr;
+				});
+				if (metricComparison) {
+					consolidatedComparison.push({
+						...metricComparison,
+						source: "metric",
+					});
+				}
+			} else {
+				const spanComparison = responseTimeSpanComparison.find(_ => {
+					const symbol = this.extractSymbol(_.name);
+					const mySymbolStr = symbol.clazz + "/" + symbol.method;
+					return symbolStr === mySymbolStr;
+				});
+				if (spanComparison) {
+					consolidatedComparison.push({
+						...spanComparison,
+						source: "span",
+					});
+				}
+			}
+		}
+
+		consolidatedComparison.sort((a, b) => b.ratio - a.ratio);
+		return consolidatedComparison;
+	}
+
+	private consolidateSampleRates(sampleRatesMetric: NameValue[], sampleRatesSpan: NameValue[]) {
+		const consolidatedSampleRates = new Map<
+			string,
+			{
+				span?: NameValue;
+				metric?: NameValue;
+			}
+		>();
+
+		for (const sampleRate of sampleRatesMetric) {
+			if (sampleRate.value < 1) {
+				continue;
+			}
+			const symbol = this.extractSymbol(sampleRate.name);
+			const symbolStr = symbol.clazz + "/" + symbol.method;
+			consolidatedSampleRates.set(symbolStr, { metric: sampleRate });
+		}
+
+		for (const sampleRate of sampleRatesSpan) {
+			if (sampleRate.value < 1) {
+				continue;
+			}
+			const symbol = this.extractSymbol(sampleRate.name);
+			const symbolStr = symbol.clazz + "/" + symbol.method;
+			const consolidatedSampleRate = consolidatedSampleRates.get(symbolStr) || {};
+			consolidatedSampleRate.span = sampleRate;
+			consolidatedSampleRates.set(symbolStr, consolidatedSampleRate);
+		}
+		return consolidatedSampleRates;
 	}
 
 	private readonly _dataTimeFrame = "SINCE 7 days AGO";
 	private readonly _baselineTimeFrame = "SINCE 30 days AGO UNTIL 7 days AGO";
-
-	async getResponseTimeAnomalies() {
-		try {
-			const [spanData, spanBaseline, metricData, metricBaseline] = await Promise.all([
-				this.getResponseTimeSpan(this._dataTimeFrame),
-				this.getResponseTimeSpan(this._baselineTimeFrame),
-				this.getResponseTimeMetric(this._dataTimeFrame),
-				this.getResponseTimeMetric(this._baselineTimeFrame),
-			]);
-			return this.formattedOutput(spanData, spanBaseline, metricData, metricBaseline);
-		} catch (ex) {
-			Logger.error(ex);
-			return [];
-		}
-	}
-
-	async getErrorRateAnomalies() {
-		try {
-			const [spanData, spanBaseline, metricData, metricBaseline] = await Promise.all([
-				this.getErrorRateSpan(this._dataTimeFrame),
-				this.getErrorRateSpan(this._baselineTimeFrame),
-				this.getErrorRateMetric(this._dataTimeFrame),
-				this.getErrorRateMetric(this._baselineTimeFrame),
-			]);
-			return this.formattedOutput(spanData, spanBaseline, metricData, metricBaseline);
-		} catch (ex) {
-			Logger.error(ex);
-			return [];
-		}
-	}
-
-	async getThroughputAnomalies() {
-		try {
-			const [spanData, spanBaseline, metricData, metricBaseline] = await Promise.all([
-				this.getThroughputSpan(this._dataTimeFrame),
-				this.getThroughputSpan(this._baselineTimeFrame),
-				this.getThroughputMetric(this._dataTimeFrame),
-				this.getThroughputMetric(this._baselineTimeFrame),
-			]);
-			return this.formattedOutput(spanData, spanBaseline, metricData, metricBaseline);
-		} catch (ex) {
-			Logger.error(ex);
-			return [];
-		}
-	}
 
 	getCommonRoots(namespaces: string[]): string[] {
 		const namespaceTree = new Map<string, any>();
@@ -109,46 +273,6 @@ export class AnomalyDetector {
 		return commonRoots;
 	}
 
-	async getObservabilityAnomaliesNamespaces(): Promise<string[]> {
-		const query =
-			`SELECT latest(code.namespace) AS namespace FROM Span ` +
-			`WHERE \`entity.guid\` = '${this.entityGuid}' ` +
-			`FACET name ${this._dataTimeFrame} LIMIT MAX`;
-
-		const results = await this.runNrql<{
-			name: string;
-			namespace: string;
-		}>(query);
-
-		const uniqueNamespaces = new Set<string>();
-		for (const result of results) {
-			uniqueNamespaces.add(result.namespace);
-		}
-
-		const { filteredNamespaces } = await SessionContainer.instance().session.agent.sendRequest(
-			AgentFilterNamespacesRequestType,
-			{
-				namespaces: Array.from(uniqueNamespaces),
-			}
-		);
-
-		return filteredNamespaces;
-	}
-
-	private formattedOutput(
-		spanData: NameValue[],
-		spanBaseline: NameValue[],
-		metricData: NameValue[],
-		metricBaseline: NameValue[]
-	) {
-		const spanComparison = this.compareData(spanData, spanBaseline);
-		const metricComparison = this.compareData(metricData, metricBaseline);
-		const top3Span = spanComparison.slice(0, 3);
-		const top3Metric = metricComparison.slice(0, 3);
-		const output = [...this.formatAnomaly(top3Span), ...this.formatAnomaly(top3Metric)];
-		return output;
-	}
-
 	private formatAnomaly(anomalies: Anomaly[]) {
 		const output: string[] = [];
 		for (const anomaly of anomalies) {
@@ -165,21 +289,21 @@ export class AnomalyDetector {
 		const comparisonMap = this.comparisonMap(data, baseline);
 		const comparisonArray: {
 			name: string;
-			oldDuration: number;
-			newDuration: number;
+			oldValue: number;
+			newValue: number;
 			ratio: number;
 		}[] = [];
 		comparisonMap.forEach((value, key) => {
 			if (value.oldValue && value.newValue && value.ratio) {
 				comparisonArray.push({
 					name: key,
-					oldDuration: value.oldValue,
-					newDuration: value.newValue,
+					oldValue: value.oldValue,
+					newValue: value.newValue,
 					ratio: value.ratio,
 				});
 			}
 		});
-		comparisonArray.sort((a, b) => a.ratio - b.ratio);
+		comparisonArray.sort((a, b) => b.ratio - a.ratio);
 		return comparisonArray;
 	}
 
@@ -198,53 +322,89 @@ export class AnomalyDetector {
 		return map;
 	}
 
-	private getResponseTimeSpan(timeFrame: string): Promise<NameValue[]> {
+	private getResponseTimeSpan(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT average(duration) * 1000 AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${this.spanLookup}) FACET name ` +
+			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
 
-	getResponseTimeMetric(timeFrame: string): Promise<NameValue[]> {
+	getResponseTimeMetric(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT average(newrelic.timeslice.value) * 1000 AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${this.metricLookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
 
-	private getErrorRateSpan(timeFrame: string): Promise<NameValue[]> {
+	private getErrorRateSpan(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(*), 1 minute) AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND \`error.group.guid\` IS NOT NULL AND (${this.spanLookup}) FACET name ` +
-			`${timeFrame} LIMIT MAX EXTRAPOLATE`;
+			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND \`error.group.guid\` IS NOT NULL AND (${lookup}) FACET name ` +
+			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
 
-	private async getErrorRateMetric(timeFrame: string): Promise<NameValue[]> {
+	private async getErrorRateMetric(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(apm.service.transaction.error.count), 1 minute) AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${this.metricLookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
 
-	private getThroughputSpan(timeFrame: string): Promise<NameValue[]> {
+	private async getSampleRateSpan(timeFrame: string, lookup: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(*), 1 minute) AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${this.spanLookup}) FACET name ` +
-			`${timeFrame} LIMIT MAX EXTRAPOLATE`;
+			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET name ` +
+			`${timeFrame} LIMIT MAX`;
 
-		return this.runNrql(query);
+		const sampleRates = await this.runNrql<NameValue>(query);
+		const filteredSampleRates = await this.filterSampleRates(sampleRates);
+		return filteredSampleRates;
 	}
 
-	private async getThroughputMetric(timeFrame: string): Promise<NameValue[]> {
+	private async filterSampleRates(sampleRates: NameValue[]) {
+		const classNames = await this.extractClassNames(sampleRates.map(_ => _.name));
+		const { filteredNamespaces } = await SessionContainer.instance().session.agent.sendRequest(
+			AgentFilterNamespacesRequestType,
+			{
+				namespaces: classNames,
+			}
+		);
+
+		const filteredSampleRates = sampleRates.filter(sampleRate =>
+			filteredNamespaces.some(namespace => sampleRate.name.indexOf(namespace) >= 0)
+		);
+		return filteredSampleRates;
+	}
+
+	private async getSampleRateMetric(timeFrame: string, lookup: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(newrelic.timeslice.value), 1 minute) AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${this.metricLookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
-		return this.runNrql(query);
+		const sampleRates = await this.runNrql<NameValue>(query);
+		const filteredSampleRates = await this.filterSampleRates(sampleRates);
+		return filteredSampleRates;
+	}
+
+	private async extractClassNames(rawNames: string[]) {
+		return rawNames.map(_ => {
+			const symbol = this.extractSymbol(_);
+			return symbol.clazz;
+		});
+	}
+
+	extractSymbol(rawName: string) {
+		const parts = rawName.split("/");
+		const method = parts[parts.length - 1];
+		const clazz = parts[parts.length - 2];
+		return {
+			clazz,
+			method,
+		};
 	}
 
 	private runNrql<T>(nrql: string): Promise<T[]> {

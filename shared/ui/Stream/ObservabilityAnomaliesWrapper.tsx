@@ -6,7 +6,6 @@ import Icon from "./Icon";
 import { Link } from "./Link";
 import { ObservabilityAnomaliesErrorRateDropdown } from "./ObservabilityAnomaliesErrorRateDropdown";
 import { ObservabilityAnomaliesResponseTimeDropdown } from "./ObservabilityAnomaliesResponseTimeDropdown";
-import { ObservabilityAnomaliesThroughputDropdown } from "./ObservabilityAnomaliesThroughputDropdown";
 
 interface Props {
 	observabilityAnomalies: GetObservabilityAnomaliesResponse;
@@ -66,11 +65,11 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 							observabilityRepo={props.observabilityRepo}
 							entityGuid={props.entityGuid}
 						/>
-						<ObservabilityAnomaliesThroughputDropdown
-							observabilityAnomalies={props.observabilityAnomalies.throughput}
-							observabilityRepo={props.observabilityRepo}
-							entityGuid={props.entityGuid}
-						/>
+						{/*<ObservabilityAnomaliesThroughputDropdown*/}
+						{/*	observabilityAnomalies={props.observabilityAnomalies.throughput}*/}
+						{/*	observabilityRepo={props.observabilityRepo}*/}
+						{/*	entityGuid={props.entityGuid}*/}
+						{/*/>*/}
 						<ObservabilityAnomaliesErrorRateDropdown
 							observabilityAnomalies={props.observabilityAnomalies.errorRate}
 							observabilityRepo={props.observabilityRepo}
