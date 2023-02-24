@@ -23,6 +23,7 @@ import * as reviewSelectors from "../../../store/reviews/reducer";
 import { HostApi } from "../../../webview-api";
 import { logError } from "@codestream/webview/logger";
 import { confirmPopup } from "../../Confirm";
+import { MergeScreen } from "./MergeScreen";
 
 interface Props {
 	pullRequest: FetchThirdPartyPullRequestPullRequest;
@@ -35,6 +36,7 @@ const EMPTY_ARRAY = [];
 
 export const PullRequestReviewButton = (props: Props) => {
 	const dispatch = useAppDispatch();
+	const [isOpen, setIsOpen] = useState(false);
 	const [title, setTitle] = useState("");
 	const [editingTitle, setEditingTitle] = useState(false);
 	const [isLoadingBranch, setIsLoadingBranch] = useState(false);
@@ -115,9 +117,6 @@ export const PullRequestReviewButton = (props: Props) => {
 			// branch is in a fork
 			if (props.pullRequest.headRepository?.isFork) {
 				return `The source branch for this PR is located on the ${props.pullRequest.headRepositoryOwner?.login}/${props.pullRequest.headRepository?.name} fork`;
-			}
-			if (props.pullRequest.viewerDidAuthor) {
-				return `You authored this pullrequest`;
 			}
 
 			return "";
@@ -259,103 +258,110 @@ export const PullRequestReviewButton = (props: Props) => {
 
 	return (
 		<>
-			{isLoadingBranch ? (
-				<Icon name="sync" className="spin" />
+			{isOpen ? (
+				<MergeScreen pr={props.pullRequest}></MergeScreen>
 			) : (
-				<span className={cantCheckoutReason ? "disabled" : ""}>
-					<Icon
-						title={
-							<>
-								Checkout Branch
-								{cantCheckoutReason && (
-									<div className="subtle smaller" style={{ maxWidth: "200px" }}>
-										Disabled: {cantCheckoutReason}
-									</div>
-								)}
-							</>
-						}
-						trigger={["hover"]}
-						delay={1}
-						onClick={checkout}
-						placement="bottom"
-						name="git-branch"
-					/>
-				</span>
+				<>
+					{isLoadingBranch ? (
+						<Icon name="sync" className="spin" />
+					) : (
+						<span className={cantCheckoutReason ? "disabled" : ""}>
+							<Icon
+								title={
+									<>
+										Checkout Branch
+										{cantCheckoutReason && (
+											<div className="subtle smaller" style={{ maxWidth: "200px" }}>
+												Disabled: {cantCheckoutReason}
+											</div>
+										)}
+									</>
+								}
+								trigger={["hover"]}
+								delay={1}
+								onClick={checkout}
+								placement="bottom"
+								name="git-branch"
+							/>
+						</span>
+					)}
+
+					<span>
+						<Icon
+							title="Reload"
+							trigger={["hover"]}
+							delay={1}
+							onClick={() => {
+								if (isLoadingPR) {
+									console.warn("reloading pr, cancelling...");
+									return;
+								}
+								reload("Reloading...");
+							}}
+							placement="bottom"
+							className={`${isLoadingPR ? "spin" : ""}`}
+							name="refresh"
+						/>
+					</span>
+
+					<span className={props.pullRequest.viewerDidAuthor ? "disabled" : ""}>
+						<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
+							name={approvalStatus.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
+							title={
+								<>
+									{approvalStatus.text}
+									{props.pullRequest.viewerDidAuthor && (
+										<div className="subtle smaller" style={{ maxWidth: "200px" }}>
+											Disabled: {`You authored this PR`}
+										</div>
+									)}
+								</>
+							} //text that shows to user when they hover, can be either Approve of Unapprove
+							trigger={["hover"]}
+							delay={1}
+							onClick={e => {
+								submitReview(approvalStatus.requestedState);
+							}}
+							placement="bottom"
+						/>
+					</span>
+					<span className={props.pullRequest.viewerDidAuthor ? "disabled" : ""}>
+						<Icon // if it's the person's own PR, they cannot request changes, should be grayed out. If changes are requested, it should show that
+							name={requestStatus.icon}
+							title={
+								<>
+									{requestStatus.text}
+									{props.pullRequest.viewerDidAuthor && (
+										<div className="subtle smaller" style={{ maxWidth: "200px" }}>
+											Disabled: {`You authored this PR`}
+										</div>
+									)}
+								</>
+							} //text that shows to user when hover, can be either Changes Requested or Request Changes
+							trigger={["hover"]}
+							delay={1}
+							placement="bottom"
+							onClick={e => {
+								submitReview(requestStatus.requestedState);
+							}}
+						/>
+					</span>
+					<span>
+						<Icon
+							className={props.pullRequest.viewerCanUpdate ? "disabled" : ""}
+							name="git-merge"
+							title="Merge"
+							trigger={["hover"]}
+							delay={1}
+							placement="bottom"
+							onClick={e => {
+								setIsOpen(true);
+							}}
+						/>
+					</span>
+				</>
 			)}
-
-			<span>
-				<Icon
-					title="Reload"
-					trigger={["hover"]}
-					delay={1}
-					onClick={() => {
-						if (isLoadingPR) {
-							console.warn("reloading pr, cancelling...");
-							return;
-						}
-						reload("Reloading...");
-					}}
-					placement="bottom"
-					className={`${isLoadingPR ? "spin" : ""}`}
-					name="refresh"
-				/>
-			</span>
-
-			<span className={props.pullRequest.viewerDidAuthor ? "disabled" : ""}>
-				<Icon //needs to change to unapprove thumbs down if already approved & needs to not be available if it's their own PR
-					name={approvalStatus.icon} //name of the icon to be shown to user; can be either thumbsup or thumbsdown
-					title={
-						<>
-							{approvalStatus.text}
-							{props.pullRequest.viewerDidAuthor && (
-								<div className="subtle smaller" style={{ maxWidth: "200px" }}>
-									Disabled: {`You authored this PR`}
-								</div>
-							)}
-						</>
-					} //text that shows to user when they hover, can be either Approve of Unapprove
-					trigger={["hover"]}
-					delay={1}
-					onClick={e => {
-						submitReview(approvalStatus.requestedState);
-					}}
-					placement="bottom"
-				/>
-			</span>
-			<span className={props.pullRequest.viewerDidAuthor ? "disabled" : ""}>
-				<Icon // if it's the person's own PR, they cannot request changes, should be grayed out. If changes are requested, it should show that
-					name={requestStatus.icon}
-					title={
-						<>
-							{requestStatus.text}
-							{props.pullRequest.viewerDidAuthor && (
-								<div className="subtle smaller" style={{ maxWidth: "200px" }}>
-									Disabled: {`You authored this PR`}
-								</div>
-							)}
-						</>
-					} //text that shows to user when hover, can be either Changes Requested or Request Changes
-					trigger={["hover"]}
-					delay={1}
-					placement="bottom"
-					onClick={e => {
-						submitReview(requestStatus.requestedState);
-					}}
-				/>
-			</span>
-			<span>
-				<Icon // This will be a whole separate thing
-					name="git-merge"
-					title="Merge"
-					trigger={["hover"]}
-					delay={1}
-					placement="bottom"
-					onClick={e => {
-						// setReviewTypeHandler("Merge");
-						// submitReview();
-					}}
-				/>
-			</span>
+			;
 		</>
 	);
 };
