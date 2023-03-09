@@ -21,7 +21,18 @@ export const MergeScreen = (props: Props) => {
 	const [mergeMethod, setMergeMethod] = useState("merge_commit");
 	const [mergeSelection, setMergeSelection] = useState("Merge commit");
 	const [isCloseSourceBranch, setIsCloseSourceBranch] = useState(false);
+	const [isChecked, setIsChecked] = useState(false);
 	const options = ["merge_commit", "squash", "fast_forward"];
+
+	const handleChange = () => {
+		if (isChecked) {
+			setIsChecked(false);
+			setIsCloseSourceBranch(false);
+		} else {
+			setIsChecked(true);
+			setIsCloseSourceBranch(true);
+		}
+	};
 
 	const mergePullRequest = async () => {
 		const result = (await dispatch(
@@ -54,8 +65,9 @@ export const MergeScreen = (props: Props) => {
 				<div className="standard-form">
 					<fieldset className="form-body">
 						<div id="controls">
-							<small title="Source">Merge {props.pr.headRefName} into </small>
-							<small title="Desitnation">{props.pr.baseRefName}</small>
+							<small title="Source">Destination: {props.pr.headRefName} </small>
+							<br></br>
+							<small title="Desitnation">Source: {props.pr.baseRefName} </small>
 							<div style={{ margin: "20px 0" }}>
 								<div className="controls">
 									<label>Commit message</label>
@@ -100,8 +112,13 @@ export const MergeScreen = (props: Props) => {
 									</InlineMenu>
 									<div style={{ height: "10px" }} />
 								</div>
+								<div>
+									<label>
+										<input type="checkbox" checked={isChecked} onChange={handleChange} />
+										Close source branch
+									</label>
+								</div>
 							</div>
-
 							<Button onClick={() => mergePullRequest()}>Merge</Button>
 						</div>
 					</fieldset>
