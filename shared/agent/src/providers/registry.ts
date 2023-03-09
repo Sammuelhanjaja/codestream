@@ -881,7 +881,7 @@ export class ThirdPartyProviderRegistry {
 				{
 					providerId: "bitbucket*org",
 					name: "Waiting on my Review",
-					query: ``,
+					query: `with_default_reviewer=true`,
 					hidden: false,
 				},
 				{

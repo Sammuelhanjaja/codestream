@@ -1006,6 +1006,8 @@ export class BitbucketProvider
 				}
 			};
 
+			const isApproved = this.isPRApproved(pr.body.participants);
+
 			const viewerDidAuthor = isViewerDidAuthor();
 
 			response = {
@@ -1067,6 +1069,7 @@ export class BitbucketProvider
 						viewer: viewer,
 						viewerDidAuthor: viewerDidAuthor,
 						viewerCanUpdate: viewerCanUpdate,
+						isApproved: isApproved,
 					} as any, //TODO: make this work
 				},
 			};
@@ -1094,13 +1097,14 @@ export class BitbucketProvider
 	async mergePullRequest(request: {
 		pullRequestId: string;
 		repoWithOwner: string;
-		message: string;
-		mergeStrategy: string;
+		mergeMessage: string;
+		mergeMethod: string;
 		closeSourceBranch?: boolean;
-	}): Promise<Directives> {
+		prParticipants: any; //TODO: fix any
+	}): Promise<Directives | undefined | { error: string }> {
 		const payload: BitbucketMergeRequest = {
-			message: request.message,
-			merge_strategy: request.mergeStrategy,
+			message: request.mergeMessage,
+			merge_strategy: request.mergeMethod,
 			close_source_branch: request.closeSourceBranch || false,
 		};
 		Logger.log(`commenting:pullRequestMerge`, {
@@ -1108,25 +1112,30 @@ export class BitbucketProvider
 			payload: payload,
 		});
 
-		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
-		const response = await this.post<BitbucketMergeRequest, any>(
-			`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/merge`,
-			payload
-		);
+		try {
+			const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
+			const response = await this.post<BitbucketMergeRequest, any>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/merge`,
+				payload
+			);
 
-		const directives: Directive[] = [
-			{
-				type: "updatePullRequest",
-				data: {
-					updatedAt: new Date().getTime() as any,
-					state: response.body.state,
+			const directives: Directive[] = [
+				{
+					type: "updatePullRequest",
+					data: {
+						updatedAt: new Date().getTime() as any,
+						state: response.body.state,
+					},
 				},
-			},
-		];
+			];
 
-		return {
-			directives: directives,
-		};
+			return {
+				directives: directives,
+			};
+		} catch (error) {
+			Logger.error(error);
+			return { error: error.message };
+		}
 	}
 
 	async createPullRequestComment(request: {
@@ -1659,6 +1668,18 @@ export class BitbucketProvider
 			return undefined;
 		}
 
+		// let isFoo = false;
+		// request.prQueries.forEach(_ => {
+		// 	if (_.query) {
+		// 		let parsedQuery = qs.parse(_.query);
+		// 		if (parsedQuery && parsedQuery["with_default_reviewer"] === "true") {
+		// 			delete parsedQuery["with_default_reviewer"];
+		// 			isFoo = true;
+		// 			_.query = qs.stringify(parsedQuery);
+		// 		}
+		// 	}
+		// });
+
 		const username = usernameResponse.body.username;
 		const queriesSafe = request.prQueries.map(query =>
 			query.query.replace(/["']/g, '\\"').replace("@me", username)
@@ -1716,6 +1737,16 @@ export class BitbucketProvider
 			}
 			throw new Error(errString);
 		});
+
+		// if (isFoo) {
+		// 	//look up default reviewers
+		// 	const defaultReviewers = this.get<any>(
+		// 		`/repositories/{workspace}/{repo_slug}/default-reviewers`
+		// 	);
+		// 	//look at the zeroth of items
+		// 	//if there is a default reviewer, check if it's user
+		// }
+
 		const response: GetMyPullRequestsResponse[][] = [];
 		items.forEach((item, index) => {
 			if (item?.body?.values?.length) {

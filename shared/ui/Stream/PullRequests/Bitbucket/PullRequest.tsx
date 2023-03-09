@@ -530,6 +530,14 @@ export const PullRequest = () => {
 		return undefined;
 	};
 
+	const isMergeable = () => {
+		if (pr?.viewerCanUpdate && pr?.isApproved && pr?.state !== "MERGED") {
+			return true;
+		} else {
+			return false;
+		}
+	};
+
 	const checkMergeabilityStatus = useCallback(() => {
 		_checkMergeabilityStatus();
 	}, [derivedState.currentPullRequest, derivedState.currentPullRequestId]);
@@ -678,7 +686,12 @@ export const PullRequest = () => {
 							</PRStatusMessage>
 							<PRActionButtons>
 								{isOpen ? (
-									<MergeScreen pr={pr}></MergeScreen>
+									<MergeScreen
+										pr={pr}
+										onClose={() => {
+											setIsOpen(false);
+										}}
+									></MergeScreen>
 								) : (
 									<>
 										{pr.viewerCanUpdate && (
@@ -697,11 +710,19 @@ export const PullRequest = () => {
 											</span>
 										)}
 										<PullRequestReviewButton pullRequest={pr}></PullRequestReviewButton>
-										<span>
+										<span className={isMergeable() ? "" : "disabled"}>
 											<Icon
-												className={pr.viewerCanUpdate ? "disabled" : ""}
 												name="git-merge"
-												title="Merge"
+												title={
+													<>
+														Merge
+														{!isMergeable() && (
+															<div className="subtle smaller" style={{ maxWidth: "200px" }}>
+																Disabled: {`Cannot merge`}
+															</div>
+														)}
+													</>
+												}
 												trigger={["hover"]}
 												delay={1}
 												placement="bottom"

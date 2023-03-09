@@ -710,7 +710,7 @@ export interface FetchThirdPartyPullRequestPullRequest {
 		}[];
 	};
 	//bitbucket
-	// isApproved: boolean;
+	isApproved: boolean;
 	// isRequested: boolean;
 	// approvalStatus: string;
 	// requestStatus: string;
