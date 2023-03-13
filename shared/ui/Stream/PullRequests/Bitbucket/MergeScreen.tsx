@@ -22,6 +22,7 @@ export const MergeScreen = (props: Props) => {
 	const [mergeSelection, setMergeSelection] = useState("Merge commit");
 	const [isCloseSourceBranch, setIsCloseSourceBranch] = useState(false);
 	const [isChecked, setIsChecked] = useState(false);
+	const [isError, setIsError] = useState(false);
 	const options = ["merge_commit", "squash", "fast_forward"];
 
 	const handleChange = () => {
@@ -33,9 +34,10 @@ export const MergeScreen = (props: Props) => {
 			setIsCloseSourceBranch(true);
 		}
 	};
+	let result;
 
 	const mergePullRequest = async () => {
-		const result = (await dispatch(
+		result = (await dispatch(
 			api({
 				method: "mergePullRequest",
 				params: {
@@ -47,83 +49,96 @@ export const MergeScreen = (props: Props) => {
 			})
 		)) as any;
 		if (result.payload.error) {
-			return <WarningBox items={[result.payload.error]}></WarningBox>;
+			console.log(result.payload.error);
+			setIsError(true);
+			return result.payload.error;
 		} else {
+			setIsError(false);
 			return;
 		}
 	};
 
 	return (
 		<Modal translucent>
-			<Dialog
-				narrow
-				title="Merge pull request"
-				onClose={() => {
-					props.onClose();
-				}}
-			>
-				<div className="standard-form">
-					<fieldset className="form-body">
-						<div id="controls">
-							<small title="Source">Destination: {props.pr.headRefName} </small>
-							<br></br>
-							<small title="Desitnation">Source: {props.pr.baseRefName} </small>
-							<div style={{ margin: "20px 0" }}>
-								<div className="controls">
-									<label>Commit message</label>
-									<input
-										autoFocus
-										placeholder="your commit message"
-										className="input-text control"
-										type="text"
-										name="message"
-										value={mergeMessage}
-										onChange={e => {
-											setMergeMessage(e.target.value);
-										}}
-									/>
+			{isError ? (
+				<WarningBox items={[{ message: result.payload.error }]}></WarningBox>
+			) : (
+				<Dialog
+					narrow
+					title="Merge pull request"
+					onClose={() => {
+						props.onClose();
+					}}
+				>
+					<div className="standard-form">
+						<fieldset className="form-body">
+							<div id="controls">
+								<small title="Source">Destination: {props.pr.headRefName} </small>
+								<br></br>
+								<small title="Desitnation">Source: {props.pr.baseRefName} </small>
+								<div style={{ margin: "20px 0" }}>
+									<div className="controls">
+										<label>Commit message</label>
+										<input
+											autoFocus
+											placeholder="your commit message"
+											className="input-text control"
+											type="text"
+											name="message"
+											value={mergeMessage}
+											onChange={e => {
+												setMergeMessage(e.target.value);
+											}}
+										/>
 
-									<InlineMenu
-										items={[
-											{
-												label: "Merge commit",
-												key: "merge_commit",
-												action: () => {
-													setMergeMethod("merge_commit"), setMergeSelection("Merge commit");
+										<InlineMenu
+											items={[
+												{
+													label: "Merge commit",
+													key: "merge_commit",
+													action: () => {
+														setMergeMethod("merge_commit"), setMergeSelection("Merge commit");
+													},
 												},
-											},
-											{
-												label: "Squash",
-												key: "squash",
-												action: () => {
-													setMergeMethod("squash"), setMergeSelection("Squash");
+												{
+													label: "Squash",
+													key: "squash",
+													action: () => {
+														setMergeMethod("squash"), setMergeSelection("Squash");
+													},
 												},
-											},
-											{
-												label: "Fast forward",
-												key: "fast_forward",
-												action: () => {
-													setMergeMethod("fast_forward"), setMergeSelection("Fast forward");
+												{
+													label: "Fast forward",
+													key: "fast_forward",
+													action: () => {
+														setMergeMethod("fast_forward"), setMergeSelection("Fast forward");
+													},
 												},
-											},
-										]}
-									>
-										{mergeSelection}
-									</InlineMenu>
-									<div style={{ height: "10px" }} />
+											]}
+										>
+											{mergeSelection}
+										</InlineMenu>
+										<div style={{ height: "10px" }} />
+									</div>
+									<div>
+										<label>
+											<input type="checkbox" checked={isChecked} onChange={handleChange} />
+											Close source branch
+										</label>
+									</div>
 								</div>
-								<div>
-									<label>
-										<input type="checkbox" checked={isChecked} onChange={handleChange} />
-										Close source branch
-									</label>
-								</div>
+								<Button
+									onClick={() => {
+										mergePullRequest(), props.onClose();
+									}}
+								>
+									Merge
+								</Button>
 							</div>
-							<Button onClick={() => mergePullRequest()}>Merge</Button>
-						</div>
-					</fieldset>
-				</div>
-			</Dialog>
+						</fieldset>
+					</div>
+				</Dialog>
+			)}
 		</Modal>
 	);
 };
