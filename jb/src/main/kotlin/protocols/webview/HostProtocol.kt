@@ -70,6 +70,15 @@ class UpdateConfigurationRequest(
 
 class ActiveEditorContextResponse(val editorContext: EditorContext? = EditorContext())
 
+class EditorSymbolRevealRequest(
+    val className: String?,
+    val functionName: String?
+)
+
+class EditorSymbolRevealResponse(
+    val success: Boolean
+)
+
 class EditorRangeHighlightRequest(
     val uri: String?,
     val range: Range?,

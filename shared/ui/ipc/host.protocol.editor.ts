@@ -24,6 +24,20 @@ export interface EditorHighlightRangeResponse {
 	success: boolean;
 }
 
+export interface EditorRevealSymbolRequest {
+	className?: string;
+	functionName?: string;
+}
+export interface EditorRevealSymbolResponse {
+	success: boolean;
+}
+export const EditorRevealSymbolRequestType = new RequestType<
+	EditorRevealSymbolRequest,
+	EditorRevealSymbolResponse,
+	void,
+	void
+>(`${IpcRoutes.Host}/editor/symbol/reveal`);
+
 export const EditorHighlightRangeRequestType = new RequestType<
 	EditorHighlightRangeRequest,
 	EditorHighlightRangeResponse,

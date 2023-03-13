@@ -6,6 +6,7 @@ import Icon from "./Icon";
 import { Link } from "./Link";
 import { ObservabilityAnomaliesErrorRateDropdown } from "./ObservabilityAnomaliesErrorRateDropdown";
 import { ObservabilityAnomaliesResponseTimeDropdown } from "./ObservabilityAnomaliesResponseTimeDropdown";
+import { ErrorRow } from "@codestream/webview/Stream/Observability";
 
 interface Props {
 	observabilityAnomalies: GetObservabilityAnomaliesResponse;
@@ -31,6 +32,16 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 				{!expanded && <Icon name="chevron-right-thin" />}
 				<span style={{ marginLeft: "2px" }}>Anomalies</span>
 			</Row>
+
+			{expanded && props.observabilityAnomalies.error && (
+				<>
+					<ErrorRow
+						customPadding={"0 10px 0 50px"}
+						title={props.observabilityAnomalies.error}
+					></ErrorRow>
+				</>
+			)}
+
 			{expanded &&
 				(props.noAccess ? (
 					<Row
@@ -58,7 +69,8 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 							)}
 						</span>
 					</Row>
-				) : (
+				) :
+				(
 					<>
 						<ObservabilityAnomaliesResponseTimeDropdown
 							observabilityAnomalies={props.observabilityAnomalies.responseTime}

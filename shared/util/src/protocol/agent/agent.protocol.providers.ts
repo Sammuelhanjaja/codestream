@@ -1208,20 +1208,21 @@ export interface GetObservabilityAnomaliesRequest {
 	entityGuid: string;
 }
 
-export interface ObservabilityAnomalyResponseTime {
-	text: string;
-}
-export interface ObservabilityAnomalyErrorRate {
-	text: string;
-}
-export interface ObservabilityAnomalyThroughput {
+export interface ObservabilityAnomaly {
+	name: string;
+	className: string;
+	functionName: string;
+	source: string;
+	oldValue: number;
+	newValue: number;
+	ratio: number;
 	text: string;
 }
 
 export interface GetObservabilityAnomaliesResponse {
-	responseTime: ObservabilityAnomalyResponseTime[];
-	errorRate: ObservabilityAnomalyErrorRate[];
-	throughput: ObservabilityAnomalyThroughput[];
+	responseTime: ObservabilityAnomaly[];
+	errorRate: ObservabilityAnomaly[];
+	error?: string;
 }
 
 export const GetObservabilityAnomaliesRequestType = new RequestType<

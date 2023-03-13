@@ -7,6 +7,20 @@ import { CodeStreamState } from "../store";
 import { ErrorRow } from "./Observability";
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
+import { openErrorGroup } from "@codestream/webview/store/codeErrors/thunks";
+import { HostApi } from "@codestream/webview/webview-api";
+import {
+	EditorRevealRangeRequestType,
+	EditorRevealSymbolRequestType,
+	WebviewPanels
+} from "@codestream/protocols/webview";
+import { Range } from "vscode-languageserver-types";
+import {
+	closeAllPanels,
+	openPanel,
+	setCurrentMethodLevelTelemetry,
+	setCurrentObservabilityAnomaly
+} from "@codestream/webview/store/context/actions";
 interface Props {
 	observabilityAnomalies?: any;
 	observabilityRepo?: any;
@@ -43,7 +57,6 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 	// useEffect(() => {}, []);
 
 	const { observabilityAnomalies, observabilityRepo } = props;
-	const noDropdown = false;
 
 	return (
 		<>
@@ -73,9 +86,29 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 								return (
 									<Row
 										style={{
-											padding: noDropdown ? "0 10px 0 60px" : "0 10px 0 42px",
+											padding: "2px 10px 2px 30px",
 										}}
 										className={"pr-row"}
+										onClick={e => {
+											HostApi.instance.send(EditorRevealSymbolRequestType, {
+												className: anomaly.className,
+												functionName: anomaly.functionName
+											});
+											dispatch(closeAllPanels());
+											dispatch(setCurrentObservabilityAnomaly(anomaly));
+											dispatch(openPanel(WebviewPanels.MethodLevelTelemetry));
+											// dispatch(
+											// 	openErrorGroup(err.errorGroupGuid, err.occurrenceId, {
+											// 		timestamp: err.lastOccurrence,
+											// 		remote: observabilityRepo.repoRemote,
+											// 		sessionStart: derivedState.sessionStart,
+											// 		pendingEntityId: err.entityId,
+											// 		occurrenceId: err.occurrenceId,
+											// 		pendingErrorGroupGuid: err.errorGroupGuid,
+											// 		src: "Observability Section",
+											// 	})
+											// );
+										}}
 									>
 										<div>
 											<span style={{ marginRight: "5px" }}>{anomaly.text}</span>

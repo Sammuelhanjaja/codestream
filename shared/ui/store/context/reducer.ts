@@ -269,6 +269,13 @@ export function reduceContext(
 			};
 		}
 
+		case ContextActionsType.SetCurrentObservabilityAnomaly: {
+			return {
+				...state,
+				currentObservabilityAnomaly: action.payload.data,
+			};
+		}
+
 		case "RESET":
 			return {
 				...initialState,

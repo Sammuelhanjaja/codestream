@@ -71,6 +71,7 @@ export enum WebviewPanels {
 	Observability = "observability",
 	PixieDynamicLogging = "pixie-dynamic-logging",
 	MethodLevelTelemetry = "method-level-telemetry",
+	ObservabilityAnomaly = "observability-anomaly",
 	CICD = "ci-cd",
 }
 

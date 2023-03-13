@@ -268,7 +268,6 @@ export const Observability = React.memo((props: Props) => {
 		useState<GetObservabilityAnomaliesResponse>({
 			responseTime: [],
 			errorRate: [],
-			throughput: [],
 		});
 	const [observabilityAssignments, setObservabilityAssignments] = useState<
 		ObservabilityErrorCore[]
@@ -487,7 +486,7 @@ export const Observability = React.memo((props: Props) => {
 	useInterval(() => {
 		fetchGoldenMetrics(expandedEntity, true);
 		fetchServiceLevelObjectives(expandedEntity);
-		fetchAnomalies(expandedEntity || "", currentRepoId);
+		// fetchAnomalies(expandedEntity || "", currentRepoId);
 	}, 300000);
 
 	/*

@@ -59,6 +59,7 @@ export enum ContextActionsType {
 	SetWantNewRelicOptions = "@context/SetWantNewRelicOptions",
 	SetClearNewRelicOptions = "@context/SetClearNewRelicOptions",
 	SetCurrentMethodLevelTelemetry = "@context/SetCurrentMethodLevelTelemetry",
+	SetCurrentObservabilityAnomaly = "@context/SetCurrentObservabilityAnomaly",
 }
 
 /**

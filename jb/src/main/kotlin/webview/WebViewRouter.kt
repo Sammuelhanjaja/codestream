@@ -1,36 +1,11 @@
 package com.codestream.webview
 
-import com.codestream.agentService
-import com.codestream.authenticationService
-import com.codestream.editorService
-import com.codestream.gson
+import com.codestream.*
 import com.codestream.protocols.agent.SetServerUrlParams
-import com.codestream.protocols.webview.ActiveEditorContextResponse
-import com.codestream.protocols.webview.CompareLocalFilesRequest
-import com.codestream.protocols.webview.EditorRangeHighlightRequest
-import com.codestream.protocols.webview.EditorRangeRevealRequest
-import com.codestream.protocols.webview.EditorRangeRevealResponse
-import com.codestream.protocols.webview.EditorRangeSelectRequest
-import com.codestream.protocols.webview.EditorRangeSelectResponse
-import com.codestream.protocols.webview.EditorScrollToRequest
-import com.codestream.protocols.webview.EditorsCodelensRefreshResponse
-import com.codestream.protocols.webview.LogoutRequest
-import com.codestream.protocols.webview.MarkerApplyRequest
-import com.codestream.protocols.webview.MarkerCompareRequest
-import com.codestream.protocols.webview.MarkerInsertTextRequest
-import com.codestream.protocols.webview.OpenUrlRequest
-import com.codestream.protocols.webview.ReviewShowDiffRequest
-import com.codestream.protocols.webview.ReviewShowLocalDiffRequest
-import com.codestream.protocols.webview.ShellPromptFolderResponse
-import com.codestream.protocols.webview.UpdateConfigurationRequest
-import com.codestream.protocols.webview.UpdateServerUrlRequest
-import com.codestream.reviewService
-import com.codestream.sessionService
+import com.codestream.protocols.webview.*
 import com.codestream.settings.ApplicationSettingsService
-import com.codestream.settingsService
 import com.codestream.system.SPACE_ENCODED
 import com.codestream.system.sanitizeURI
-import com.codestream.webViewService
 import com.github.salomonbrys.kotson.fromJson
 import com.github.salomonbrys.kotson.get
 import com.github.salomonbrys.kotson.jsonObject
@@ -123,6 +98,7 @@ class WebViewRouter(val project: Project) {
             "host/editor/range/reveal" -> editorRangeReveal(message)
             "host/editor/range/select" -> editorRangeSelect(message)
             "host/editor/scrollTo" -> editorScrollTo(message)
+            "host/editor/symbol/reveal" -> editorSymbolReveal(message)
             "host/editors/codelens/refresh" -> editorsCodelensRefresh(message)
             "host/shell/prompt/folder" -> shellPromptFolder(message)
             "host/review/showDiff" -> reviewShowDiff(message)
@@ -208,6 +184,12 @@ class WebViewRouter(val project: Project) {
             ?: false
         return EditorRangeRevealResponse(success)
     }
+    private suspend fun editorSymbolReveal(message: WebViewMessage): EditorSymbolRevealResponse {
+        val request = gson.fromJson<EditorSymbolRevealRequest>(message.params!!)
+        val success = project.clmService?.revealSymbol(request.className, request.functionName)
+            ?: false
+        return EditorSymbolRevealResponse(success)
+    }
 
     private suspend fun editorRangeSelect(message: WebViewMessage): EditorRangeSelectResponse {
         val request = gson.fromJson<EditorRangeSelectRequest>(message.params!!)
@@ -221,6 +203,8 @@ class WebViewRouter(val project: Project) {
         val request = gson.fromJson<EditorScrollToRequest>(message.params!!)
         project.editorService?.scroll(sanitizeURI(request.uri)!!, request.position, request.atTop)
     }
+
+
 
     private fun editorsCodelensRefresh(message: WebViewMessage): EditorsCodelensRefreshResponse {
         project.sessionService?.didChangeCodelenses()

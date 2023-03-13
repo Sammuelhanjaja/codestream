@@ -1,6 +1,9 @@
 package com.codestream.clm
 
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.future.await
+import java.util.concurrent.CompletableFuture
 
 class CLMService(val project: Project) {
 
@@ -16,5 +19,20 @@ class CLMService(val project: Project) {
             filteredNamespaces.addAll(it.filterNamespaces(namespaces))
         }
         return filteredNamespaces
+    }
+
+    suspend fun revealSymbol(className: String?, functionName: String?): Boolean {
+        val future = CompletableFuture<Boolean>()
+        DumbService.getInstance(project).smartInvokeLater {
+            for (component in _languageComponents) {
+                val symbol = component.findSymbol(className, functionName)
+                symbol?.let {
+                    it.navigate(false)
+                    future.complete(true)
+                }
+            }
+            future.complete(false)
+        }
+        return future.await()
     }
 }

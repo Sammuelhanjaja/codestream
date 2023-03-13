@@ -11,6 +11,7 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.project.Project
+import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 
@@ -74,4 +75,6 @@ abstract class CLMLanguageComponent<T : CLMEditorManager>(
     }
 
     open fun filterNamespaces(namespaces: List<String>): List<String> = emptyList()
+
+    open fun findSymbol(className: String?, functionName: String?): NavigatablePsiElement? = null
 }
