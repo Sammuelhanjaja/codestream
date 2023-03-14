@@ -194,7 +194,7 @@
 				},
 				"codestream.goldenSignalsInEditorFormat": {
 					"type": "string",
-					"default": "avg duration: ${averageDuration} | error rate: ${errorRate} - ${sampleSize} samples in the last ${since}",
+					"default": "avg duration: ${averageDuration} | error rate: ${errorRate} - ${sampleSize} in the last ${since}",
 					"description": "Specifies how to format the CodeStream golden signals in the editor",
 					"scope": "window"
 				},
