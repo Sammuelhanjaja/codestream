@@ -20,7 +20,7 @@ const val API_PD = "https://pd-api.codestream.us"
 const val API_QA = "https://qa-api.codestream.us"
 const val API_PROD = "https://api.codestream.com"
 const val DEFAULT_GOLDEN_SIGNALS_FORMAT =
-    "avg duration: \${averageDuration} | error rate: \${errorRate} - \${sampleSize} samples in the last \${since}"
+    "avg duration: \${averageDuration} | error rate: \${errorRate} - \${sampleSize} in the last \${since}"
 
 enum class ProxySupport(val value: String, val label: String) {
     ON("on", "On"),

@@ -79,7 +79,7 @@ class Metrics {
         val errorRateStr = "%.1f".format(errorRateValue * 100) + "%"
         return template.replace("\${averageDuration}", averageDurationStr)
             .replace("\${errorRate}", errorRateStr)
-            .replace("\${sampleSize}", sampleSizeStr)
+            .replace("\${sampleSize}", if(sampleSizeStr.equals("1")) "\${sampleSize} sample" else "\${sampleSize} samples")
             .replace("\${since}", since)
     }
 
