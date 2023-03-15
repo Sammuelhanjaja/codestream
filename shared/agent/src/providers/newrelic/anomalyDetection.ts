@@ -68,8 +68,8 @@ export class AnomalyDetector {
 		);
 
 		return {
-			responseTime: responseTimeAnomalies.slice(0, 3),
-			errorRate: errorRateAnomalies.slice(0, 3),
+			responseTime: responseTimeAnomalies,
+			errorRate: errorRateAnomalies,
 		};
 	}
 
@@ -249,7 +249,7 @@ export class AnomalyDetector {
 	}
 
 	private readonly _dataTimeFrame = "SINCE 7 days AGO";
-	private readonly _baselineTimeFrame = "SINCE 30 days AGO UNTIL 7 days AGO";
+	private readonly _baselineTimeFrame = "SINCE 21 days AGO UNTIL 7 days AGO";
 
 	getCommonRoots(namespaces: string[]): string[] {
 		const namespaceTree = new Map<string, any>();

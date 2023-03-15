@@ -1,4 +1,8 @@
-import { MetricTimesliceNameMapping, RepoProjectType } from "@codestream/protocols/agent";
+import {
+	MetricTimesliceNameMapping,
+	ObservabilityAnomaly,
+	RepoProjectType,
+} from "@codestream/protocols/agent";
 import { CodemarkType } from "@codestream/protocols/api";
 
 import { NewPullRequestBranch } from "@codestream/protocols/webview";
@@ -133,6 +137,7 @@ export interface ContextState extends WebviewContext {
 
 	wantNewRelicOptions?: WantNewRelicOptions;
 	currentMethodLevelTelemetry?: CurrentMethodLevelTelemetry;
+	currentObservabilityAnomaly?: ObservabilityAnomaly;
 
 	selectedRegion?: string;
 }

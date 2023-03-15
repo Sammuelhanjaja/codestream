@@ -18,6 +18,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
@@ -34,30 +35,32 @@ abstract class NewCodemark(val name: String, val type: CodemarkType) : AnAction(
     var telemetrySource: String? = null
 
     private fun execute(project: Project, source: String) {
-        project.editorService?.activeEditor?.run {
-            val line = selectionOrCurrentLine.start.line
-            if (!this.selectionModel.hasSelection()) {
-                val startOffset = this.document.getLineStartOffset(line)
-                val endOffset = this.document.getLineEndOffset(line)
-                this.selectionModel.setSelection(startOffset, endOffset)
-            }
+        ApplicationManager.getApplication().invokeLater {
+            project.editorService?.activeEditor?.run {
+                val line = selectionOrCurrentLine.start.line
+                if (!this.selectionModel.hasSelection()) {
+                    val startOffset = this.document.getLineStartOffset(line)
+                    val endOffset = this.document.getLineEndOffset(line)
+                    this.selectionModel.setSelection(startOffset, endOffset)
+                }
 
-            val isReview = isPullRequest() && isSelectionWithinDiffRange()
-            GlobalScope.launch {
-                inlineTextFieldManager?.showTextField(isReview, line, getDefaultPrCommentText())
-                    ?: project.codeStream?.show {
-                        project.webViewService?.postNotification(
-                            CodemarkNotifications.New(
-                                document.uri,
-                                selectionOrCurrentLine,
-                                type,
-                                telemetrySource ?: source
+                val isReview = isPullRequest() && isSelectionWithinDiffRange()
+                GlobalScope.launch {
+                    inlineTextFieldManager?.showTextField(isReview, line, getDefaultPrCommentText())
+                        ?: project.codeStream?.show {
+                            project.webViewService?.postNotification(
+                                CodemarkNotifications.New(
+                                    document.uri,
+                                    selectionOrCurrentLine,
+                                    type,
+                                    telemetrySource ?: source
+                                )
                             )
-                        )
-                    }
+                        }
+
+                }
 
             }
-
         }
     }
 

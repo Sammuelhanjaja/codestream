@@ -13,8 +13,9 @@ import {
 import {
 	DidChangeObservabilityDataNotificationType,
 	GetMethodLevelTelemetryRequestType,
-	GetMethodLevelTelemetryResponse, ObservabilityAnomaly,
-	WarningOrError
+	GetMethodLevelTelemetryResponse,
+	ObservabilityAnomaly,
+	WarningOrError,
 } from "@codestream/protocols/agent";
 import styled from "styled-components";
 
@@ -28,26 +29,18 @@ import {
 import { LoadingMessage } from "@codestream/webview/src/components/LoadingMessage";
 import { CodeStreamState } from "@codestream/webview/store";
 import { closeAllPanels } from "@codestream/webview/store/context/actions";
-import { CurrentMethodLevelTelemetry } from "@codestream/webview/store/context/types";
 import { useDidMount, usePrevious } from "@codestream/webview/utilities/hooks";
 import { HostApi } from "@codestream/webview/webview-api";
 import { PanelHeader } from "../../src/components/PanelHeader";
-import { closePanel, setUserPreference } from "../actions";
+import { closePanel } from "../actions";
 import CancelButton from "../CancelButton";
 import { DropdownButton } from "../DropdownButton";
 import { EntityAssociator } from "../EntityAssociator";
 import Icon from "../Icon";
 import { Link } from "../Link";
 import { WarningBox } from "../WarningBox";
-import {
-	MissingCsharpExtension,
-	MissingGoExtension,
-	MissingJavaExtension,
-	MissingPhpExtension,
-	MissingPythonExtension,
-	MissingRubyExtension,
-	RubyPluginLanguageServer,
-} from "./MissingExtension";
+
+
 import { MetaLabel } from "../Codemark/BaseCodemark";
 
 const Root = styled.div``;
@@ -100,20 +93,25 @@ export const ObservabilityAnomalyPanel = () => {
 	const loadData = async (newRelicEntityGuid: string) => {
 		setLoading(true);
 		try {
-			if (!derivedState.currentObservabilityAnomaly.repo?.id) {
-				setWarningOrErrors([{ message: "Repository missing" }]);
-				return;
-			}
-			if (!derivedState.currentObservabilityAnomaly.metricTimesliceNameMapping) {
-				setWarningOrErrors([{ message: "Repository metric timeslice names" }]);
-				return;
-			}
+			// if (!derivedState.currentObservabilityAnomaly.repo?.id) {
+			// 	setWarningOrErrors([{ message: "Repository missing" }]);
+			// 	return;
+			// }
+			// if (!derivedState.currentObservabilityAnomaly.metricTimesliceNameMapping) {
+			// 	setWarningOrErrors([{ message: "Repository metric timeslice names" }]);
+			// 	return;
+			// }
 
+			const anomaly = derivedState.currentObservabilityAnomaly;
 			const response = await HostApi.instance.send(GetMethodLevelTelemetryRequestType, {
 				newRelicEntityGuid: newRelicEntityGuid,
-				metricTimesliceNameMapping:
-					derivedState.currentObservabilityAnomaly.metricTimesliceNameMapping,
-				repoId: derivedState.currentObservabilityAnomaly.repo.id,
+				metricTimesliceNameMapping: {
+					source: anomaly.source,
+					duration: anomaly.name,
+					errorRate: anomaly.name,
+					sampleSize: anomaly.name,
+				},
+				since: "30 days",
 			});
 			setTelemetryResponse(response);
 		} catch (ex) {
@@ -124,31 +122,32 @@ export const ObservabilityAnomalyPanel = () => {
 	};
 
 	useDidMount(() => {
-		HostApi.instance.track("MLT Codelens Clicked", {
-			"NR Account ID": derivedState.currentObservabilityAnomaly?.newRelicAccountId + "",
-			Language: derivedState.currentObservabilityAnomaly.languageId,
-		});
-		if (!derivedState.currentMethodLevelTelemetry.error) {
-			loadData(derivedState.currentMethodLevelTelemetry.newRelicEntityGuid!);
-		}
+		// HostApi.instance.track("MLT Codelens Clicked", {
+		// 	"NR Account ID": derivedState.currentObservabilityAnomaly?.newRelicAccountId + "",
+		// 	Language: derivedState.currentObservabilityAnomaly.languageId,
+		// });
+		// if (!derivedState.currentMethodLevelTelemetry.error) {
+		// 	loadData(derivedState.currentMethodLevelTelemetry.newRelicEntityGuid!);
+		// }
 	});
 
 	useEffect(() => {
 		if (
-			!previouscurrentMethodLevelTelemetry ||
-			JSON.stringify(previouscurrentMethodLevelTelemetry) ===
-				JSON.stringify(derivedState.currentMethodLevelTelemetry)
+			!previousCurrentObservabilityAnomaly ||
+			JSON.stringify(previousCurrentObservabilityAnomaly) ===
+				JSON.stringify(derivedState.currentObservabilityAnomaly)
 		) {
 			return;
 		}
 
-		loadData(derivedState.currentMethodLevelTelemetry.newRelicEntityGuid!);
-	}, [derivedState.currentMethodLevelTelemetry]);
+		// loadData(derivedState.currentObservabilityAnomaly.newRelicEntityGuid!);
+	}, [derivedState.currentObservabilityAnomaly]);
 
 	if (
-		derivedState.currentMethodLevelTelemetry.error &&
-		derivedState.currentMethodLevelTelemetry.error.type === "NOT_ASSOCIATED" &&
-		derivedState.currentMethodLevelTelemetry.repo
+		false
+		// derivedState.currentMethodLevelTelemetry.error &&
+		// derivedState.currentMethodLevelTelemetry.error.type === "NOT_ASSOCIATED" &&
+		// derivedState.currentMethodLevelTelemetry.repo
 	) {
 		return (
 			<Root className="full-height-codemark-form">
@@ -171,17 +170,19 @@ export const ObservabilityAnomalyPanel = () => {
 						title="Method-Level Telemetry"
 						label="Associate this repository with an entity from New Relic so that you can see golden signals right in your editor, and errors in the Observability section."
 						onSuccess={async e => {
-							HostApi.instance.track("MLT Repo Association", {
-								"NR Account ID": derivedState.currentMethodLevelTelemetry.newRelicAccountId + "",
-							});
+							// HostApi.instance.track("MLT Repo Association", {
+							// 	"NR Account ID": derivedState.currentMethodLevelTelemetry.newRelicAccountId + "",
+							// });
 							HostApi.instance.send(RefreshEditorsCodeLensRequestType, {});
 							HostApi.instance.emit(DidChangeObservabilityDataNotificationType.method, {
 								type: "RepositoryAssociation",
 							});
 							dispatch(closeAllPanels());
 						}}
-						remote={derivedState.currentMethodLevelTelemetry.repo.remote}
-						remoteName={derivedState.currentMethodLevelTelemetry.repo.name}
+						// remote={derivedState.currentMethodLevelTelemetry.repo.remote}
+						// remoteName={derivedState.currentMethodLevelTelemetry.repo.name}
+						remote={""}
+						remoteName={""}
 					>
 						<div>
 							<br />
@@ -221,22 +222,22 @@ export const ObservabilityAnomalyPanel = () => {
 		return subtext;
 	};
 
-	switch (derivedState.currentMethodLevelTelemetry?.error?.type) {
-		case "NO_RUBY_VSCODE_EXTENSION":
-			return <MissingRubyExtension />;
-		case "NO_JAVA_VSCODE_EXTENSION":
-			return <MissingJavaExtension />;
-		case "NO_PYTHON_VSCODE_EXTENSION":
-			return <MissingPythonExtension />;
-		case "NO_CSHARP_VSCODE_EXTENSION":
-			return <MissingCsharpExtension />;
-		case "NO_GO_VSCODE_EXTENSION":
-			return <MissingGoExtension />;
-		case "NO_PHP_VSCODE_EXTENSION":
-			return <MissingPhpExtension />;
-		case "RUBY_PLUGIN_NO_LANGUAGE_SERVER":
-			return <RubyPluginLanguageServer />;
-	}
+	// switch (derivedState.currentMethodLevelTelemetry?.error?.type) {
+	// 	case "NO_RUBY_VSCODE_EXTENSION":
+	// 		return <MissingRubyExtension />;
+	// 	case "NO_JAVA_VSCODE_EXTENSION":
+	// 		return <MissingJavaExtension />;
+	// 	case "NO_PYTHON_VSCODE_EXTENSION":
+	// 		return <MissingPythonExtension />;
+	// 	case "NO_CSHARP_VSCODE_EXTENSION":
+	// 		return <MissingCsharpExtension />;
+	// 	case "NO_GO_VSCODE_EXTENSION":
+	// 		return <MissingGoExtension />;
+	// 	case "NO_PHP_VSCODE_EXTENSION":
+	// 		return <MissingPhpExtension />;
+	// 	case "RUBY_PLUGIN_NO_LANGUAGE_SERVER":
+	// 		return <RubyPluginLanguageServer />;
+	// }
 
 	return (
 		<Root className="full-height-codemark-form">
@@ -249,7 +250,7 @@ export const ObservabilityAnomalyPanel = () => {
 					}}
 				>
 					<PanelHeader
-						title={derivedState.currentMethodLevelTelemetry.functionName + " telemetry"}
+						title={derivedState.currentObservabilityAnomaly.functionName + " telemetry"}
 					></PanelHeader>
 				</div>
 			)}
@@ -275,7 +276,7 @@ export const ObservabilityAnomalyPanel = () => {
 										<EntityDropdownContainer>
 											<b>Entity: </b>
 											<DropdownButton
-												items={(
+												items={
 													[
 														{
 															type: "search",
@@ -284,51 +285,52 @@ export const ObservabilityAnomalyPanel = () => {
 															key: "search",
 														},
 													] as any
-												).concat(
-													telemetryResponse.newRelicEntityAccounts!.map((item, i) => {
-														return {
-															label: item.entityName,
-															subtextWide: renderEntityDropdownSubtext(item),
-															searchLabel: item.entityName,
-															key: item.entityGuid + "-" + i,
-															checked: item.entityGuid === telemetryResponse.newRelicEntityGuid!,
-															action: async () => {
-																const repoId = derivedState.currentMethodLevelTelemetry?.repo?.id;
-																const newPreferences =
-																	derivedState.observabilityRepoEntities.filter(
-																		_ => _.repoId !== repoId
-																	);
-																if (repoId) {
-																	newPreferences.push({
-																		repoId: repoId,
-																		entityGuid: item.entityGuid,
-																	});
-																	dispatch(
-																		setUserPreference({
-																			prefPath: ["observabilityRepoEntities"],
-																			value: newPreferences,
-																		})
-																	);
-																}
-
-																// update the IDEs
-																HostApi.instance.send(RefreshEditorsCodeLensRequestType, {});
-																// tell other parts of the webview that we updated this
-																HostApi.instance.emit(
-																	DidChangeObservabilityDataNotificationType.method,
-																	{
-																		type: "Entity",
-																		data: {
-																			entityGuid: item.entityGuid,
-																			repoId: repoId,
-																		},
-																	}
-																);
-																loadData(item.entityGuid);
-															},
-														};
-													})
-												)}
+													// .concat(
+													// telemetryResponse.newRelicEntityAccounts!.map((item, i) => {
+													// 	return {
+													// 		label: item.entityName,
+													// 		subtextWide: renderEntityDropdownSubtext(item),
+													// 		searchLabel: item.entityName,
+													// 		key: item.entityGuid + "-" + i,
+													// 		checked: item.entityGuid === telemetryResponse.newRelicEntityGuid!,
+													// 		action: async () => {
+													// 			const repoId = derivedState.currentMethodLevelTelemetry?.repo?.id;
+													// 			const newPreferences =
+													// 				derivedState.observabilityRepoEntities.filter(
+													// 					_ => _.repoId !== repoId
+													// 				);
+													// 			if (repoId) {
+													// 				newPreferences.push({
+													// 					repoId: repoId,
+													// 					entityGuid: item.entityGuid,
+													// 				});
+													// 				dispatch(
+													// 					setUserPreference({
+													// 						prefPath: ["observabilityRepoEntities"],
+													// 						value: newPreferences,
+													// 					})
+													// 				);
+													// 			}
+													//
+													// 			// update the IDEs
+													// 			HostApi.instance.send(RefreshEditorsCodeLensRequestType, {});
+													// 			// tell other parts of the webview that we updated this
+													// 			HostApi.instance.emit(
+													// 				DidChangeObservabilityDataNotificationType.method,
+													// 				{
+													// 					type: "Entity",
+													// 					data: {
+													// 						entityGuid: item.entityGuid,
+													// 						repoId: repoId,
+													// 					},
+													// 				}
+													// 			);
+													// 			loadData(item.entityGuid);
+													// 		},
+													// 	};
+													// })
+													// )
+												}
 												selectedKey={telemetryResponse.newRelicEntityName!}
 												variant={"secondary"}
 												wrap
@@ -361,14 +363,14 @@ export const ObservabilityAnomalyPanel = () => {
 											)}
 										</EntityDropdownContainer>
 									)}
-									<div style={{ margin: "0 0 11px 0" }}>
-										<b>Repo:</b> {derivedState.currentMethodLevelTelemetry.repo?.name}
-									</div>
-									{derivedState?.currentMethodLevelTelemetry.relativeFilePath && (
-										<div>
-											<b>File:</b> {derivedState?.currentMethodLevelTelemetry.relativeFilePath}
-										</div>
-									)}
+									{/*<div style={{ margin: "0 0 11px 0" }}>*/}
+									{/*	<b>Repo:</b> {derivedState.currentMethodLevelTelemetry.repo?.name}*/}
+									{/*</div>*/}
+									{/*{derivedState?.currentMethodLevelTelemetry.relativeFilePath && (*/}
+									{/*	<div>*/}
+									{/*		<b>File:</b> {derivedState?.currentMethodLevelTelemetry.relativeFilePath}*/}
+									{/*	</div>*/}
+									{/*)}*/}
 									<div>
 										<br />
 										{telemetryResponse &&
