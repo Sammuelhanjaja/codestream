@@ -4,5 +4,8 @@
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/jb" />
   </component>
+  <component name="PWA">
+    <option name="wasEnabledAtLeastOnce" value="true" />
+  </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_19" project-jdk-name="jbr-11" project-jdk-type="JavaSDK" />
 </project>
