@@ -572,6 +572,7 @@ export interface FetchThirdPartyPullRequestPullRequest {
 		};
 	};
 	comments?: any[]; //TODO: Fix this!
+	description: string; //this is for bitbucket
 	files: {
 		pageInfo: {
 			endCursor?: string;

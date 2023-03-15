@@ -1,8 +1,5 @@
-import {
-	FetchThirdPartyPullRequestPullRequest,
-} from "@codestream/protocols/agent";
+import { FetchThirdPartyPullRequestPullRequest } from "@codestream/protocols/agent";
 import { CSMe } from "@codestream/protocols/api";
-
 
 import {
 	getCurrentProviderPullRequest,
@@ -141,12 +138,8 @@ export const PullRequestTimelineItems = (props: PropsWithChildren<Props>) => {
 								text={pendingComments[pr.id]}
 								done={() => doneEditingComment(pr.id)}
 							/>
-						) : pr.bodyHTML || pr.body ? ( //this is where to fix it
-							<MarkdownText
-								text={pr.bodyHTML ? pr.bodyHTML : pr.body}
-								isHtml={pr.bodyHTML ? true : false}
-								inline
-							/>
+						) : pr.description ? ( //this is where to fix it
+							<MarkdownText text={pr.description} isHtml={pr.bodyHTML ? true : false} inline />
 						) : (
 							<i>No description provided.</i>
 						)}

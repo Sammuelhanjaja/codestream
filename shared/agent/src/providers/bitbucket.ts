@@ -138,6 +138,181 @@ interface BitbucketAuthor {
 		nickname: string;
 	};
 }
+
+interface BitbucketWorkspace {
+	type: string;
+	user: {
+		display_name: string;
+		links: {
+			self: {
+				href: string;
+			};
+			avatar: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+		};
+		type: string;
+		uuid: string;
+		account_id: string;
+		nickname: string;
+	};
+	workspace: {
+		type: string;
+		uuid: string;
+		name: string;
+		slug: string;
+		links: {
+			avatar: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+			self: {
+				href: string;
+			};
+		};
+	};
+	links: {
+		self: {
+			href: string;
+		};
+	};
+	added_on: string;
+	permission: string;
+	last_accessed: string;
+}
+
+interface BitbucketReposInWorkspace {
+	type: string;
+	full_name: string;
+	links: {
+		self: {
+			href: string;
+		};
+		html: {
+			href: string;
+		};
+		avatar: {
+			href: string;
+		};
+		pullrequests: {
+			href: string;
+		};
+		commits: {
+			href: string;
+		};
+		forks: {
+			href: string;
+		};
+		watchers: {
+			href: string;
+		};
+		branches: {
+			href: string;
+		};
+		tags: {
+			href: string;
+		};
+		downloads: {
+			href: string;
+		};
+		source: {
+			href: string;
+		};
+		clone: [
+			{
+				name: string;
+				href: string;
+			},
+			{
+				name: string;
+				href: string;
+			}
+		];
+		hooks: {
+			href: string;
+		};
+	};
+	name: string;
+	slug: string;
+	description: string;
+	scm: string;
+	website: null;
+	owner: {
+		display_name: string;
+		links: {
+			self: {
+				href: string;
+			};
+			avatar: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+		};
+		type: string;
+		uuid: string;
+		account_id: string;
+		nickname: string;
+	};
+	workspace: {
+		type: string;
+		uuid: string;
+		name: string;
+		slug: string;
+		links: {
+			avatar: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+			self: {
+				href: string;
+			};
+		};
+	};
+	is_private: false;
+	project: {
+		type: string;
+		key: string;
+		uuid: string;
+		name: string;
+		links: {
+			self: {
+				href: string;
+			};
+			html: {
+				href: string;
+			};
+			avatar: {
+				href: string;
+			};
+		};
+	};
+	fork_policy: string;
+	created_on: string;
+	updated_on: string;
+	size: number;
+	language: string;
+	has_issues: boolean;
+	has_wiki: boolean;
+	uuid: string;
+	mainbranch: {
+		name: string;
+		type: string;
+	};
+	override_settings: {
+		default_merge_strategy: boolean;
+		branching_model: boolean;
+	};
+}
+
 interface BitbucketRepoFull extends BitbucketRepo {
 	type?: string;
 	full_name: string;
@@ -269,6 +444,25 @@ interface BitbucketRepoFull extends BitbucketRepo {
 		state?: string;
 		participated_on?: string;
 	}[];
+}
+
+interface BitbucketDefaultReviewer {
+	display_name: string;
+	links: {
+		self: {
+			href: string;
+		};
+		avatar: {
+			href: string;
+		};
+		html: {
+			href: string;
+		};
+	};
+	type: string;
+	uuid: string;
+	account_id: string;
+	nickname: string;
 }
 
 interface BitbucketPullRequestComment2 {
@@ -1138,6 +1332,44 @@ export class BitbucketProvider
 		}
 	}
 
+	async updatePullRequestBody(request: {
+		pullRequestId: string;
+		id: string;
+		body: string;
+	}): Promise<Directives> {
+		const payload: any = {
+			description: request.body,
+		};
+
+		Logger.log(`commenting:updatingPRDescription`, {
+			request: request,
+			payload: payload,
+		});
+
+		const { pullRequestId, repoWithOwner } = this.parseId(request.pullRequestId);
+		const response = await this.put<any, BitbucketPullRequest>(
+			`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}`,
+			payload
+		);
+		const directives: Directive[] = [
+			{
+				type: "updatePullRequest",
+				data: {
+					description: response.body.description as any,
+					updatedAt: new Date().getTime() as any,
+				},
+			},
+		];
+
+		this.updateCache(request.pullRequestId, {
+			directives: directives,
+		});
+
+		return {
+			directives: directives,
+		};
+	}
+
 	async createPullRequestComment(request: {
 		pullRequestId: string;
 		sha: string;
@@ -1657,6 +1889,38 @@ export class BitbucketProvider
 		return this._isMatchingRemotePredicate;
 	}
 
+	// private _getUserRepos = async (ws: any) => {
+	// 	const workspaceSlugsArray = ws;
+	// 	const repoArr = workspaceSlugsArray.map(async (workspace: any) => {
+	// 		//list repositories in a workspace  repositories/{workspace}
+	// 		const reposInWorkspace = await this.get<BitbucketReposInWorkspace[]>(
+	// 			`/repositories/${workspace}`
+	// 		);
+	// 		//values.full_name
+	// 		let repoArray = [];
+	// 		repoArray.push(
+	// 			reposInWorkspace.body.filter(_ => {
+	// 				_.full_name;
+	// 			})
+	// 		);
+	// 		return repoArray; //array of the repo full names inside a workspace
+	// 	});
+	// 	return repoArr;
+	// };
+
+	// private _getUserWorkspaces = async () => {
+	// 	//get all workspaces for a user: user/permissions/workspaces
+	// 	const reposInWorkspace = await this.get<BitbucketWorkspace[]>(`/user/permissions/workspaces`);
+	// 	//values.workspace.slug
+	// 	let workSpaceSlugArray = [];
+	// 	workSpaceSlugArray.push(
+	// 		reposInWorkspace.body.filter(_ => {
+	// 			_.workspace.slug;
+	// 		})
+	// 	);
+	// 	return workSpaceSlugArray; //array of the workspace slugs for current user
+	// };
+
 	async getMyPullRequests(
 		request: GetMyPullRequestsRequest
 	): Promise<GetMyPullRequestsResponse[][] | undefined> {
@@ -1668,17 +1932,19 @@ export class BitbucketProvider
 			return undefined;
 		}
 
-		// let isFoo = false;
-		// request.prQueries.forEach(_ => {
-		// 	if (_.query) {
-		// 		let parsedQuery = qs.parse(_.query);
-		// 		if (parsedQuery && parsedQuery["with_default_reviewer"] === "true") {
-		// 			delete parsedQuery["with_default_reviewer"];
-		// 			isFoo = true;
-		// 			_.query = qs.stringify(parsedQuery);
-		// 		}
-		// 	}
-		// });
+		let defaultReviewerCollection: boolean[] = [];
+		request.prQueries.forEach((_, index) => {
+			let isDefaultReviewer = false;
+			if (_.query) {
+				let parsedQuery = qs.parse(_.query);
+				if (parsedQuery && parsedQuery["with_default_reviewer"] === "true") {
+					delete parsedQuery["with_default_reviewer"];
+					isDefaultReviewer = true;
+					_.query = qs.stringify(parsedQuery);
+				}
+			}
+			defaultReviewerCollection.push(isDefaultReviewer);
+		});
 
 		const username = usernameResponse.body.username;
 		const queriesSafe = request.prQueries.map(query =>
@@ -1738,14 +2004,19 @@ export class BitbucketProvider
 			throw new Error(errString);
 		});
 
-		// if (isFoo) {
-		// 	//look up default reviewers
-		// 	const defaultReviewers = this.get<any>(
-		// 		`/repositories/{workspace}/{repo_slug}/default-reviewers`
-		// 	);
-		// 	//look at the zeroth of items
-		// 	//if there is a default reviewer, check if it's user
-		// }
+		// const workspaceSlugsArr = this._getUserWorkspaces();
+		// const repoFullNameArr = this._getUserRepos(workspaceSlugsArr);
+
+		items.forEach((item, index) => {
+			if (defaultReviewerCollection[index]) {
+				//look up default reviewer for each item in the repoFullNameArr
+				const defaultReviewers = this.get<BitbucketDefaultReviewer[]>(
+					`/repositories/reneepetit/practice/default-reviewers`
+				);
+				item.body.values = item.body.values.filter(reviewer => reviewer.author.account_id);
+				//item.body.values = item.body.values where user_id equals the user - pull request objects
+			}
+		});
 
 		const response: GetMyPullRequestsResponse[][] = [];
 		items.forEach((item, index) => {
