@@ -3,6 +3,7 @@ import { shallowEqual } from "react-redux";
 
 import { useAppDispatch, useAppSelector } from "@codestream/webview/utilities/hooks";
 import { CodeStreamState } from "../store";
+import { ErrorRow } from "./Observability";
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
 interface Props {
@@ -61,19 +62,7 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 				<>
 					{props.observabilityAnomalies.length == 0 ? (
 						<>
-							<Row
-								style={{
-									padding: noDropdown ? "0 10px 0 60px" : "0 10px 0 42px",
-								}}
-								className={"pr-row"}
-							>
-								<div />
-								<div style={{ textAlign: "right", marginRight: "5px", direction: "rtl" }}>
-									<span>
-										/asdf/asdf/asdf/asdfsadfsadfsadfsadf/sadfasdfasdfsaf/asdfasdfasdf/asdf/asdf/asfdasdfasd/files.tsx
-									</span>
-								</div>
-							</Row>
+							<ErrorRow customPadding={"0 10px 0 50px"} title={"No anomalies to display"} />
 						</>
 					) : (
 						<>
