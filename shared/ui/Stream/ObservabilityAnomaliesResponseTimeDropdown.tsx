@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { shallowEqual } from "react-redux";
 
@@ -7,19 +6,15 @@ import { CodeStreamState } from "../store";
 import { ErrorRow } from "./Observability";
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
-import { openErrorGroup } from "@codestream/webview/store/codeErrors/thunks";
 import { HostApi } from "@codestream/webview/webview-api";
 import {
-	EditorRevealRangeRequestType,
 	EditorRevealSymbolRequestType,
-	WebviewPanels
+	WebviewPanels,
 } from "@codestream/protocols/webview";
-import { Range } from "vscode-languageserver-types";
 import {
 	closeAllPanels,
 	openPanel,
-	setCurrentMethodLevelTelemetry,
-	setCurrentObservabilityAnomaly
+	setCurrentObservabilityAnomaly,
 } from "@codestream/webview/store/context/actions";
 interface Props {
 	observabilityAnomalies?: any;
@@ -86,13 +81,13 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 								return (
 									<Row
 										style={{
-											padding: "2px 10px 2px 30px",
+											padding: "0 10px 0 42px",
 										}}
 										className={"pr-row"}
 										onClick={e => {
 											HostApi.instance.send(EditorRevealSymbolRequestType, {
 												className: anomaly.className,
-												functionName: anomaly.functionName
+												functionName: anomaly.functionName,
 											});
 											dispatch(closeAllPanels());
 											dispatch(setCurrentObservabilityAnomaly(anomaly));
@@ -110,13 +105,13 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 											// );
 										}}
 									>
-										<div>
-											<span style={{ marginRight: "5px" }}>{anomaly.text}</span>
+										<div />
+										<div style={{ textAlign: "right", marginRight: "5px", direction: "rtl" }}>
+											<span>{anomaly.text}</span>
 										</div>
 									</Row>
 								);
 							})}
-							;
 						</>
 					)}
 				</>
