@@ -25,24 +25,24 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 
 	useEffect(() => {
 		let _filteredErrorsByRepo = props.observabilityAnomalies.filter(
-			oe => oe?.repoId === observabilityRepo?.repoId
+			oe => oe?.repoId === props?.observabilityRepo?.repoId
 		);
 
 		const _filteredErrors = _filteredErrorsByRepo.map(fe => {
 			return fe.errors.filter(error => {
 				return error.entityId === props.entityGuid;
-				// if (error.entityId === props.entityGuid) {
-				// 	return error;
-				// }
 			});
 		});
 		setFilteredErrors(_filteredErrors || []);
 	}, [props.observabilityAnomalies]);
 
-	// useDidMount(() => {});
-	// useEffect(() => {}, []);
+	//@TODO make this a general utility
+	const getRoundedPercentage = number => {
+		const factor = Math.pow(10, 2);
+		const roundedNumber = Math.floor(number * factor) / factor;
+		return `${roundedNumber * 100}`;
+	};
 
-	const { observabilityAnomalies, observabilityRepo } = props;
 	const noDropdown = false;
 
 	return (
@@ -85,7 +85,9 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 											<span>{anomaly.text}</span>
 										</div>
 										<div style={{ overflow: "visible", marginLeft: "auto", flexGrow: 0 }}>
-											<span style={{ width: "10%", textAlign: "right" }}>{anomaly.ratio}</span>
+											<span style={{ width: "10%", textAlign: "right" }}>
+												{getRoundedPercentage(anomaly.ratio)}
+											</span>
 										</div>
 									</Row>
 								);
