@@ -25,8 +25,50 @@ export const CLMSettings = () => {
 				<form className="standard-form vscroll">
 					<fieldset className="form-body">
 						<div id="controls">
-							{!isChangeTrackingEnabled && <div>Change tracking disabled</div>}
-							{isChangeTrackingEnabled && <div>Change tracking enabled</div>}
+							{!isChangeTrackingEnabled && (
+								<>
+									<div style={{ display: "flex" }}>
+										<div>Compare data from the last:</div>
+										<div style={{ marginLeft: "auto" }}>7 days</div>
+									</div>
+									<div style={{ display: "flex" }}>
+										<div>Against data from the preceding:</div>
+										<div style={{ marginLeft: "auto" }}>21 days</div>
+									</div>
+								</>
+							)}
+							{isChangeTrackingEnabled && (
+								<>
+									<div style={{ display: "flex" }}>
+										<div>Compare data from the most recent release that is at least:</div>
+										<div style={{ marginLeft: "auto" }}>7 days ago</div>
+									</div>
+									<div style={{ display: "flex" }}>
+										<div>Compare data from the last:</div>
+										<div style={{ marginLeft: "auto" }}>7 days</div>
+									</div>
+									<div style={{ display: "flex" }}>
+										<div>Against data from the preceding:</div>
+										<div style={{ marginLeft: "auto" }}>21 days</div>
+									</div>
+								</>
+							)}
+							<div style={{ marginTop: "20px", display: "flex" }}>
+								<div>Minimum change to be anomalous:</div>
+								<div style={{ marginLeft: "auto" }}>10 %</div>
+							</div>
+							<div style={{ display: "flex" }}>
+								<div>Minimum baseline sample size:</div>
+								<div style={{ marginLeft: "auto" }}>30 rpm</div>
+							</div>
+							<div style={{ display: "flex" }}>
+								<div>Minimum error rate:</div>
+								<div style={{ marginLeft: "auto" }}>0.1%</div>
+							</div>
+							<div style={{ display: "flex" }}>
+								<div>Minimum average duration:</div>
+								<div style={{ marginLeft: "auto" }}>?? ms</div>
+							</div>
 						</div>
 					</fieldset>
 				</form>
