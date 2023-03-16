@@ -138,6 +138,7 @@ export interface ContextState extends WebviewContext {
 	wantNewRelicOptions?: WantNewRelicOptions;
 	currentMethodLevelTelemetry?: CurrentMethodLevelTelemetry;
 	currentObservabilityAnomaly?: ObservabilityAnomaly;
+	currentObservabilityAnomalyEntityGuid?: string;
 
 	selectedRegion?: string;
 }

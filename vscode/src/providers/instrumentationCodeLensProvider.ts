@@ -583,9 +583,7 @@ export class InstrumentationCodeLensProvider implements vscode.CodeLensProvider 
 									: "n/a",
 							sampleSize:
 								sampleSizeForFunction && sampleSizeForFunction.sampleSize
-									? sampleSizeForFunction.sampleSize == "1"
-										? `${sampleSizeForFunction.sampleSize} sample`
-										: `${sampleSizeForFunction.sampleSize} samples`
+									? `${sampleSizeForFunction.sampleSize}`
 									: "n/a",
 							errorRate:
 								errorRateForFunction && errorRateForFunction.errorRate
