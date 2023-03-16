@@ -40,7 +40,6 @@ import Icon from "../Icon";
 import { Link } from "../Link";
 import { WarningBox } from "../WarningBox";
 
-
 import { MetaLabel } from "../Codemark/BaseCodemark";
 
 const Root = styled.div``;
@@ -75,6 +74,8 @@ export const ObservabilityAnomalyPanel = () => {
 			showGoldenSignalsInEditor: state.configs.showGoldenSignalsInEditor,
 			currentObservabilityAnomaly: (state.context.currentObservabilityAnomaly ||
 				{}) as ObservabilityAnomaly,
+			currentObservabilityAnomalyEntityGuid:
+				state.context.currentObservabilityAnomalyEntityGuid || "",
 			observabilityRepoEntities:
 				(state.users[state.session.userId!].preferences || {}).observabilityRepoEntities ||
 				EMPTY_ARRAY,
@@ -111,7 +112,7 @@ export const ObservabilityAnomalyPanel = () => {
 					errorRate: anomaly.name,
 					sampleSize: anomaly.name,
 				},
-				since: "30 days",
+				since: "30 days ago",
 			});
 			setTelemetryResponse(response);
 		} catch (ex) {
@@ -127,7 +128,7 @@ export const ObservabilityAnomalyPanel = () => {
 		// 	Language: derivedState.currentObservabilityAnomaly.languageId,
 		// });
 		// if (!derivedState.currentMethodLevelTelemetry.error) {
-		// 	loadData(derivedState.currentMethodLevelTelemetry.newRelicEntityGuid!);
+		loadData(derivedState.currentObservabilityAnomalyEntityGuid);
 		// }
 	});
 
@@ -140,7 +141,7 @@ export const ObservabilityAnomalyPanel = () => {
 			return;
 		}
 
-		// loadData(derivedState.currentObservabilityAnomaly.newRelicEntityGuid!);
+		loadData(derivedState.currentObservabilityAnomalyEntityGuid);
 	}, [derivedState.currentObservabilityAnomaly]);
 
 	if (

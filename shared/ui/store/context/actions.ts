@@ -1,4 +1,8 @@
-import { ObservabilityAnomaly, RegisterUserRequest, RepoProjectType } from "@codestream/protocols/agent";
+import {
+	ObservabilityAnomaly,
+	RegisterUserRequest,
+	RepoProjectType,
+} from "@codestream/protocols/agent";
 import { CodemarkType } from "@codestream/protocols/api";
 
 import {
@@ -139,8 +143,8 @@ export const setCurrentCodemark = (codemarkId?: string, markerId?: string) =>
 export const setCurrentMethodLevelTelemetry = (data: any) =>
 	action(ContextActionsType.SetCurrentMethodLevelTelemetry, { data });
 
-export const setCurrentObservabilityAnomaly = (data: ObservabilityAnomaly) =>
-	action(ContextActionsType.SetCurrentObservabilityAnomaly, { data });
+export const setCurrentObservabilityAnomaly = (anomaly: ObservabilityAnomaly, entityGuid: string) =>
+	action(ContextActionsType.SetCurrentObservabilityAnomaly, { anomaly, entityGuid });
 
 export const setComposeCodemarkActive = (type: CodemarkType | undefined) =>
 	action(ContextActionsType.SetComposeCodemarkActive, { type });

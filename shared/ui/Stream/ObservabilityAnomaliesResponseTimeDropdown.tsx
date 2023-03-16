@@ -90,8 +90,8 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 												functionName: anomaly.functionName,
 											});
 											dispatch(closeAllPanels());
-											dispatch(setCurrentObservabilityAnomaly(anomaly));
-											dispatch(openPanel(WebviewPanels.MethodLevelTelemetry));
+											dispatch(setCurrentObservabilityAnomaly(anomaly, props.entityGuid!));
+											dispatch(openPanel(WebviewPanels.ObservabilityAnomaly));
 											// dispatch(
 											// 	openErrorGroup(err.errorGroupGuid, err.occurrenceId, {
 											// 		timestamp: err.lastOccurrence,

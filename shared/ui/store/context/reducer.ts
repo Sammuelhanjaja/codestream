@@ -272,7 +272,8 @@ export function reduceContext(
 		case ContextActionsType.SetCurrentObservabilityAnomaly: {
 			return {
 				...state,
-				currentObservabilityAnomaly: action.payload.data,
+				currentObservabilityAnomaly: action.payload.anomaly,
+				currentObservabilityAnomalyEntityGuid: action.payload.entityGuid,
 			};
 		}
 
