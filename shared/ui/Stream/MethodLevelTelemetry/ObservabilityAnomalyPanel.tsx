@@ -19,10 +19,8 @@ import {
 } from "@codestream/protocols/agent";
 import styled from "styled-components";
 
-import Tooltip from "../Tooltip";
 import { DelayedRender } from "@codestream/webview/Container/DelayedRender";
 import {
-	OpenUrlRequestType,
 	RefreshEditorsCodeLensRequestType,
 	UpdateConfigurationRequestType,
 } from "@codestream/webview/ipc/host.protocol";
@@ -34,10 +32,7 @@ import { HostApi } from "@codestream/webview/webview-api";
 import { PanelHeader } from "../../src/components/PanelHeader";
 import { closePanel } from "../actions";
 import CancelButton from "../CancelButton";
-import { DropdownButton } from "../DropdownButton";
 import { EntityAssociator } from "../EntityAssociator";
-import Icon from "../Icon";
-import { Link } from "../Link";
 import { WarningBox } from "../WarningBox";
 
 import { MetaLabel } from "../Codemark/BaseCodemark";
@@ -113,6 +108,7 @@ export const ObservabilityAnomalyPanel = () => {
 					sampleSize: anomaly.name,
 				},
 				since: "30 days ago",
+				timeseriesGroup: "1 day",
 			});
 			setTelemetryResponse(response);
 		} catch (ex) {
@@ -273,97 +269,97 @@ export const ObservabilityAnomalyPanel = () => {
 								</>
 							) : (
 								<div>
-									{telemetryResponse && (
-										<EntityDropdownContainer>
-											<b>Entity: </b>
-											<DropdownButton
-												items={
-													[
-														{
-															type: "search",
-															placeholder: "Search...",
-															action: "search",
-															key: "search",
-														},
-													] as any
-													// .concat(
-													// telemetryResponse.newRelicEntityAccounts!.map((item, i) => {
-													// 	return {
-													// 		label: item.entityName,
-													// 		subtextWide: renderEntityDropdownSubtext(item),
-													// 		searchLabel: item.entityName,
-													// 		key: item.entityGuid + "-" + i,
-													// 		checked: item.entityGuid === telemetryResponse.newRelicEntityGuid!,
-													// 		action: async () => {
-													// 			const repoId = derivedState.currentMethodLevelTelemetry?.repo?.id;
-													// 			const newPreferences =
-													// 				derivedState.observabilityRepoEntities.filter(
-													// 					_ => _.repoId !== repoId
-													// 				);
-													// 			if (repoId) {
-													// 				newPreferences.push({
-													// 					repoId: repoId,
-													// 					entityGuid: item.entityGuid,
-													// 				});
-													// 				dispatch(
-													// 					setUserPreference({
-													// 						prefPath: ["observabilityRepoEntities"],
-													// 						value: newPreferences,
-													// 					})
-													// 				);
-													// 			}
-													//
-													// 			// update the IDEs
-													// 			HostApi.instance.send(RefreshEditorsCodeLensRequestType, {});
-													// 			// tell other parts of the webview that we updated this
-													// 			HostApi.instance.emit(
-													// 				DidChangeObservabilityDataNotificationType.method,
-													// 				{
-													// 					type: "Entity",
-													// 					data: {
-													// 						entityGuid: item.entityGuid,
-													// 						repoId: repoId,
-													// 					},
-													// 				}
-													// 			);
-													// 			loadData(item.entityGuid);
-													// 		},
-													// 	};
-													// })
-													// )
-												}
-												selectedKey={telemetryResponse.newRelicEntityName!}
-												variant={"secondary"}
-												wrap
-											>
-												{telemetryResponse.newRelicEntityName!}
-											</DropdownButton>
-											{telemetryResponse && telemetryResponse.newRelicUrl && (
-												<Tooltip
-													title="View service summary on New Relic"
-													placement="bottom"
-													delay={1}
-												>
-													<ApmServiceTitle>
-														<Link
-															onClick={e => {
-																e.preventDefault();
-																HostApi.instance.track("Open Service Summary on NR", {
-																	Section: "Code-level Metrics",
-																});
-																HostApi.instance.send(OpenUrlRequestType, {
-																	url: telemetryResponse.newRelicUrl!,
-																});
-															}}
-														>
-															{" "}
-															<Icon name="link-external" className="open-external"></Icon>
-														</Link>
-													</ApmServiceTitle>
-												</Tooltip>
-											)}
-										</EntityDropdownContainer>
-									)}
+									{/*{telemetryResponse && (*/}
+									{/*	<EntityDropdownContainer>*/}
+									{/*		<b>Entity: </b>*/}
+									{/*		<DropdownButton*/}
+									{/*			items={*/}
+									{/*				[*/}
+									{/*					{*/}
+									{/*						type: "search",*/}
+									{/*						placeholder: "Search...",*/}
+									{/*						action: "search",*/}
+									{/*						key: "search",*/}
+									{/*					},*/}
+									{/*				] as any*/}
+									{/*				// .concat(*/}
+									{/*				// telemetryResponse.newRelicEntityAccounts!.map((item, i) => {*/}
+									{/*				// 	return {*/}
+									{/*				// 		label: item.entityName,*/}
+									{/*				// 		subtextWide: renderEntityDropdownSubtext(item),*/}
+									{/*				// 		searchLabel: item.entityName,*/}
+									{/*				// 		key: item.entityGuid + "-" + i,*/}
+									{/*				// 		checked: item.entityGuid === telemetryResponse.newRelicEntityGuid!,*/}
+									{/*				// 		action: async () => {*/}
+									{/*				// 			const repoId = derivedState.currentMethodLevelTelemetry?.repo?.id;*/}
+									{/*				// 			const newPreferences =*/}
+									{/*				// 				derivedState.observabilityRepoEntities.filter(*/}
+									{/*				// 					_ => _.repoId !== repoId*/}
+									{/*				// 				);*/}
+									{/*				// 			if (repoId) {*/}
+									{/*				// 				newPreferences.push({*/}
+									{/*				// 					repoId: repoId,*/}
+									{/*				// 					entityGuid: item.entityGuid,*/}
+									{/*				// 				});*/}
+									{/*				// 				dispatch(*/}
+									{/*				// 					setUserPreference({*/}
+									{/*				// 						prefPath: ["observabilityRepoEntities"],*/}
+									{/*				// 						value: newPreferences,*/}
+									{/*				// 					})*/}
+									{/*				// 				);*/}
+									{/*				// 			}*/}
+									{/*				//*/}
+									{/*				// 			// update the IDEs*/}
+									{/*				// 			HostApi.instance.send(RefreshEditorsCodeLensRequestType, {});*/}
+									{/*				// 			// tell other parts of the webview that we updated this*/}
+									{/*				// 			HostApi.instance.emit(*/}
+									{/*				// 				DidChangeObservabilityDataNotificationType.method,*/}
+									{/*				// 				{*/}
+									{/*				// 					type: "Entity",*/}
+									{/*				// 					data: {*/}
+									{/*				// 						entityGuid: item.entityGuid,*/}
+									{/*				// 						repoId: repoId,*/}
+									{/*				// 					},*/}
+									{/*				// 				}*/}
+									{/*				// 			);*/}
+									{/*				// 			loadData(item.entityGuid);*/}
+									{/*				// 		},*/}
+									{/*				// 	};*/}
+									{/*				// })*/}
+									{/*				// )*/}
+									{/*			}*/}
+									{/*			selectedKey={telemetryResponse.newRelicEntityName!}*/}
+									{/*			variant={"secondary"}*/}
+									{/*			wrap*/}
+									{/*		>*/}
+									{/*			{telemetryResponse.newRelicEntityName!}*/}
+									{/*		</DropdownButton>*/}
+									{/*		{telemetryResponse && telemetryResponse.newRelicUrl && (*/}
+									{/*			<Tooltip*/}
+									{/*				title="View service summary on New Relic"*/}
+									{/*				placement="bottom"*/}
+									{/*				delay={1}*/}
+									{/*			>*/}
+									{/*				<ApmServiceTitle>*/}
+									{/*					<Link*/}
+									{/*						onClick={e => {*/}
+									{/*							e.preventDefault();*/}
+									{/*							HostApi.instance.track("Open Service Summary on NR", {*/}
+									{/*								Section: "Code-level Metrics",*/}
+									{/*							});*/}
+									{/*							HostApi.instance.send(OpenUrlRequestType, {*/}
+									{/*								url: telemetryResponse.newRelicUrl!,*/}
+									{/*							});*/}
+									{/*						}}*/}
+									{/*					>*/}
+									{/*						{" "}*/}
+									{/*						<Icon name="link-external" className="open-external"></Icon>*/}
+									{/*					</Link>*/}
+									{/*				</ApmServiceTitle>*/}
+									{/*			</Tooltip>*/}
+									{/*		)}*/}
+									{/*	</EntityDropdownContainer>*/}
+									{/*)}*/}
 									{/*<div style={{ margin: "0 0 11px 0" }}>*/}
 									{/*	<b>Repo:</b> {derivedState.currentMethodLevelTelemetry.repo?.name}*/}
 									{/*</div>*/}

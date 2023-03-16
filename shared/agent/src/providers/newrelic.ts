@@ -1914,7 +1914,8 @@ export class NewRelicProvider
 			const goldenMetrics = await this.getMethodLevelGoldenMetrics(
 				request.newRelicEntityGuid || entity!.entityGuid!,
 				request.metricTimesliceNameMapping,
-				request.since
+				request.since,
+				request.timeseriesGroup
 			);
 
 			const entityGuid = entity?.entityGuid || request.newRelicEntityGuid;
@@ -2191,7 +2192,8 @@ export class NewRelicProvider
 	async getMethodLevelGoldenMetrics(
 		entityGuid: string,
 		metricTimesliceNames?: MetricTimesliceNameMapping,
-		since?: string
+		since?: string,
+		timeseriesGroup?: string
 	): Promise<MethodGoldenMetrics[] | undefined> {
 		const queries = await this.getMethodLevelGoldenMetricQueries(entityGuid, metricTimesliceNames);
 
@@ -2217,6 +2219,10 @@ export class NewRelicProvider
 				// if no metricTimesliceNames, then we don't need TIMESERIES in query
 				if (!metricTimesliceNames) {
 					_query = _query?.replace(/TIMESERIES/, "");
+				}
+
+				if (timeseriesGroup) {
+					_query = _query?.replace(/TIMESERIES/, `TIMESERIES ${timeseriesGroup}`);
 				}
 
 				if (since) {
