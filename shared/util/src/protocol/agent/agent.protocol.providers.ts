@@ -1358,6 +1358,7 @@ export interface GetMethodLevelTelemetryRequest {
 	/** contains the specific formatting of a metricTimesliceName for a golden metric type */
 	metricTimesliceNameMapping?: MetricTimesliceNameMapping;
 	since?: string;
+	timeseriesGroup?: string;
 }
 
 export interface GetEntityCountRequest {

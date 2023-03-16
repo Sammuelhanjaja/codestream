@@ -284,11 +284,12 @@ export class AnomalyDetector {
 	}
 
 	private formatAnomaly(anomaly: Anomaly) {
-		const variation = (anomaly.ratio - 1) * 100;
-		const formattedVariation = (Math.round(variation * 100) / 100).toFixed(2);
+		// const variation = (anomaly.ratio - 1) * 100;
+		// const formattedVariation = (Math.round(variation * 100) / 100).toFixed(2);
 		const formattedName = anomaly.name.replace(/(^Custom\/|Java\/)/gi, "");
-		const text = formattedName + (variation > 0 ? " +" : " ") + formattedVariation + "%";
-		return text;
+		// const text = formattedName + (variation > 0 ? " +" : " ") + formattedVariation + "%";
+		// return text;
+		return formattedName;
 	}
 
 	private compareData(data: NameValue[], baseline: NameValue[]) {
