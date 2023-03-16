@@ -74,9 +74,18 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 										}}
 										className={"pr-row"}
 									>
-										<div />
-										<div style={{ textAlign: "right", marginRight: "5px", direction: "rtl" }}>
+										<div
+											style={{
+												width: "85%",
+												textAlign: "left",
+												marginRight: "5px",
+												direction: "rtl",
+											}}
+										>
 											<span>{anomaly.text}</span>
+										</div>
+										<div style={{ overflow: "visible", marginLeft: "auto", flexGrow: 0 }}>
+											<span style={{ width: "10%", textAlign: "right" }}>{anomaly.ratio}</span>
 										</div>
 									</Row>
 								);

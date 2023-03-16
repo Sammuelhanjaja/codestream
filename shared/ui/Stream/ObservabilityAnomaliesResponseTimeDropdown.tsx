@@ -7,10 +7,7 @@ import { ErrorRow } from "./Observability";
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
 import { HostApi } from "@codestream/webview/webview-api";
-import {
-	EditorRevealSymbolRequestType,
-	WebviewPanels,
-} from "@codestream/protocols/webview";
+import { EditorRevealSymbolRequestType, WebviewPanels } from "@codestream/protocols/webview";
 import {
 	closeAllPanels,
 	openPanel,
@@ -105,9 +102,18 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 											// );
 										}}
 									>
-										<div />
-										<div style={{ textAlign: "right", marginRight: "5px", direction: "rtl" }}>
+										<div
+											style={{
+												width: "85%",
+												textAlign: "left",
+												marginRight: "5px",
+												direction: "rtl",
+											}}
+										>
 											<span>{anomaly.text}</span>
+										</div>
+										<div style={{ overflow: "visible", marginLeft: "auto", flexGrow: 0 }}>
+											<span style={{ width: "10%", textAlign: "right" }}>{anomaly.ratio}</span>
 										</div>
 									</Row>
 								);

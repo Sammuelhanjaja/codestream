@@ -2,7 +2,6 @@ import { useAppDispatch, useAppSelector } from "../utilities/hooks";
 import React, { useState } from "react";
 import { CodeStreamState } from "../store";
 import { closeModal } from "./actions";
-import { getTeamSetting } from "../store/teams/reducer";
 import ScrollBox from "./ScrollBox";
 import { Dialog } from "../src/components/Dialog";
 
@@ -16,20 +15,19 @@ export const CLMSettings = () => {
 			teamId,
 			team,
 			currentUserId,
-			createReviewOnCommit: state.preferences.reviewCreateOnCommit !== false,
-			reviewApproval: getTeamSetting(team, "reviewApproval"),
-			reviewAssignment: getTeamSetting(team, "reviewAssignment"),
 		};
 	});
-	const [loadingApproval, setLoadingApproval] = useState("");
-	const [loadingAssignment, setLoadingAssignment] = useState("");
+	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(false);
 
 	return (
 		<Dialog title="Code-Level Metrics Settings" onClose={() => dispatch(closeModal())}>
 			<ScrollBox>
 				<form className="standard-form vscroll">
 					<fieldset className="form-body">
-						<div id="controls"></div>
+						<div id="controls">
+							{!isChangeTrackingEnabled && <div>Change tracking disabled</div>}
+							{isChangeTrackingEnabled && <div>Change tracking enabled</div>}
+						</div>
 					</fieldset>
 				</form>
 			</ScrollBox>
