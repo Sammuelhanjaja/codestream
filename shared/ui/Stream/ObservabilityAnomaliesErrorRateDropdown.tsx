@@ -43,8 +43,6 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 		return `${roundedNumber * 100}`;
 	};
 
-	const noDropdown = false;
-
 	return (
 		<>
 			<Row
@@ -70,7 +68,7 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 								return (
 									<Row
 										style={{
-											padding: noDropdown ? "0 10px 0 60px" : "0 10px 0 42px",
+											padding: "0 10px 0 42px",
 										}}
 										className={"pr-row"}
 									>
