@@ -101,6 +101,7 @@ import { ProfilePanel } from "./ProfilePanel";
 import { PRProviderErrorBanner } from "./PRProviderErrorBanner";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewSettings } from "./ReviewSettings";
+import { CLMSettings } from "./CLMSettings";
 import { Sidebar } from "./Sidebar";
 import { PRInfoModal } from "./SpatialView/PRInfoModal";
 import { Team } from "./Team";
@@ -467,6 +468,7 @@ export class SimpleStream extends PureComponent<Props> {
 						{activeModal === WebviewModals.CreateTeam && <CreateTeamPage />}
 						{activeModal === WebviewModals.CreateCompany && <CreateCompanyPage />}
 						{activeModal === WebviewModals.ReviewSettings && <ReviewSettings />}
+						{activeModal === WebviewModals.CLMSettings && <CLMSettings />}
 						{activeModal === WebviewModals.Notifications && <Notifications />}
 						{activeModal === WebviewModals.ChangeEmail && <ChangeEmail />}
 						{activeModal === WebviewModals.ChangeAvatar && <ChangeAvatar />}

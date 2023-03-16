@@ -119,6 +119,7 @@ export enum WebviewModals {
 	Keybindings = "keybindings",
 	Notifications = "notifications",
 	ReviewSettings = "review-settings",
+	CLMSettings = "clm-settings",
 	Invite = "invite",
 	BlameMap = "blame-map",
 	Team = "people",

@@ -1,12 +1,14 @@
 import { GetObservabilityAnomaliesResponse } from "@codestream/protocols/agent";
 import React, { useState } from "react";
-
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
 import { Link } from "./Link";
 import { ObservabilityAnomaliesErrorRateDropdown } from "./ObservabilityAnomaliesErrorRateDropdown";
 import { ObservabilityAnomaliesResponseTimeDropdown } from "./ObservabilityAnomaliesResponseTimeDropdown";
 import { ErrorRow } from "@codestream/webview/Stream/Observability";
+import { useAppDispatch } from "../utilities/hooks";
+import { openModal } from "../store/context/actions";
+import { WebviewModals } from "../ipc/webview.protocol.common";
 
 interface Props {
 	observabilityAnomalies: GetObservabilityAnomaliesResponse;
@@ -18,6 +20,7 @@ interface Props {
 
 export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 	const [expanded, setExpanded] = useState<boolean>(true);
+	const dispatch = useAppDispatch();
 
 	return (
 		<>
@@ -28,9 +31,31 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 				className={"pr-row"}
 				onClick={() => setExpanded(!expanded)}
 			>
-				{expanded && <Icon name="chevron-down-thin" />}
-				{!expanded && <Icon name="chevron-right-thin" />}
-				<span style={{ marginLeft: "2px" }}>Anomalies</span>
+				<span style={{ paddingTop: "3px" }}>
+					{expanded && <Icon name="chevron-down-thin" />}
+					{!expanded && <Icon name="chevron-right-thin" />}
+				</span>
+				<div className="label">
+					<span style={{ marginLeft: "2px" }}>Code-Level Metrics</span>
+				</div>
+
+				<div className="icons">
+					<span
+						onClick={e => {
+							e.preventDefault();
+							e.stopPropagation();
+							dispatch(openModal(WebviewModals.CLMSettings));
+						}}
+					>
+						<Icon
+							name="gear"
+							className="clickable"
+							title="Code-Level Metric Settings"
+							placement="bottomLeft"
+							delay={1}
+						/>
+					</span>
+				</div>
 			</Row>
 
 			{expanded && props.observabilityAnomalies.error && (
@@ -69,8 +94,7 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 							)}
 						</span>
 					</Row>
-				) :
-				(
+				) : (
 					<>
 						<ObservabilityAnomaliesResponseTimeDropdown
 							observabilityAnomalies={props.observabilityAnomalies.responseTime}
