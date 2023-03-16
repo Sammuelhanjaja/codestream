@@ -398,12 +398,7 @@ export const ObservabilityAnomalyPanel = () => {
 																<XAxis
 																	dataKey="endDate"
 																	tick={{ fontSize: 12 }}
-																	tickFormatter={label =>
-																		new Date(label).toLocaleTimeString(undefined, {
-																			hour: "2-digit",
-																			minute: "2-digit",
-																		})
-																	}
+																	tickFormatter={label => new Date(label).toLocaleDateString()}
 																/>
 																<YAxis dataKey={_.title} tick={{ fontSize: 12 }} />
 																<ReTooltip
