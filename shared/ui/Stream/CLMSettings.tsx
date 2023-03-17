@@ -4,6 +4,8 @@ import { CodeStreamState } from "../store";
 import { closeModal } from "./actions";
 import ScrollBox from "./ScrollBox";
 import { Dialog } from "../src/components/Dialog";
+import { Dropdown } from "../Stream/Dropdown";
+import Button from "./Button";
 
 export const CLMSettings = () => {
 	const dispatch = useAppDispatch();
@@ -18,9 +20,64 @@ export const CLMSettings = () => {
 		};
 	});
 	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(false);
+	const [compareDataLastValue, setCompareDataLastValue] = useState("7");
+	const [againstDataPrecedingValue, setAgainstDataPrecedingValue] = useState("21");
+	const [minimumChangeValue, setMinimumChangeValue] = useState("10");
+	const [minimumBaselineValue, setMinimumBaselineValue] = useState("30");
+	const [minimumErrorRateValue, setMinimumErrorRateValue] = useState("0.1");
+	const [minimumAverageDurationValue, setMinimumAverageDurationValue] = useState("10");
+
+	const compareDataLastItems = [
+		{
+			label: "7",
+			key: "7",
+			action: () => setCompareDataLastValue("7"),
+		},
+		{
+			label: "14",
+			key: "14",
+			action: () => setCompareDataLastValue("14"),
+		},
+		{
+			label: "21",
+			key: "21",
+			action: () => setCompareDataLastValue("21"),
+		},
+		{
+			label: "28",
+			key: "28",
+			action: () => setCompareDataLastValue("28"),
+		},
+	];
+	const againstDataPrecedingItems = [
+		{
+			label: "21",
+			key: "21",
+			action: () => setCompareDataLastValue("21"),
+		},
+		{
+			label: "28",
+			key: "28",
+			action: () => setCompareDataLastValue("28"),
+		},
+		{
+			label: "35",
+			key: "35",
+			action: () => setCompareDataLastValue("35"),
+		},
+		{
+			label: "42",
+			key: "42",
+			action: () => setCompareDataLastValue("42"),
+		},
+	];
+
+	const handleClickSubmit = () => {
+		console.warn("Submit button clicked");
+	};
 
 	return (
-		<Dialog title="Code-Level Metrics Settings" onClose={() => dispatch(closeModal())}>
+		<Dialog wide title="Code-Level Metrics Settings" onClose={() => dispatch(closeModal())}>
 			<ScrollBox>
 				<form className="standard-form vscroll">
 					<fieldset className="form-body">
@@ -29,11 +86,25 @@ export const CLMSettings = () => {
 								<>
 									<div style={{ display: "flex" }}>
 										<div>Compare data from the last:</div>
-										<div style={{ marginLeft: "auto" }}>7 days</div>
+										<div style={{ marginLeft: "auto" }}>
+											<Dropdown
+												selectedValue={compareDataLastValue}
+												items={compareDataLastItems}
+												noModal={true}
+											/>{" "}
+											days
+										</div>
 									</div>
-									<div style={{ display: "flex" }}>
+									<div style={{ display: "flex", marginTop: "5px" }}>
 										<div>Against data from the preceding:</div>
-										<div style={{ marginLeft: "auto" }}>21 days</div>
+										<div style={{ marginLeft: "auto" }}>
+											<Dropdown
+												selectedValue={againstDataPrecedingValue}
+												items={againstDataPrecedingItems}
+												noModal={true}
+											/>{" "}
+											days
+										</div>
 									</div>
 								</>
 							)}
@@ -45,29 +116,68 @@ export const CLMSettings = () => {
 									</div>
 									<div style={{ display: "flex" }}>
 										<div>Compare data from the last:</div>
-										<div style={{ marginLeft: "auto" }}>7 days</div>
+										<div style={{ marginLeft: "auto" }}>
+											<Dropdown
+												selectedValue={compareDataLastValue}
+												items={compareDataLastItems}
+												noModal={true}
+											/>
+										</div>
 									</div>
 									<div style={{ display: "flex" }}>
 										<div>Against data from the preceding:</div>
-										<div style={{ marginLeft: "auto" }}>21 days</div>
+										<div style={{ marginLeft: "auto" }}>
+											<Dropdown
+												selectedValue={againstDataPrecedingValue}
+												items={againstDataPrecedingItems}
+												noModal={true}
+											/>
+										</div>
 									</div>
 								</>
 							)}
 							<div style={{ marginTop: "20px", display: "flex" }}>
 								<div>Minimum change to be anomalous:</div>
-								<div style={{ marginLeft: "auto" }}>10 %</div>
+								<div style={{ marginLeft: "auto" }}>
+									<input type="number" min="1" max="100" value={minimumChangeValue} /> %
+								</div>
 							</div>
-							<div style={{ display: "flex" }}>
+							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum baseline sample size:</div>
-								<div style={{ marginLeft: "auto" }}>30 rpm</div>
+								<div style={{ marginLeft: "auto" }}>
+									<input type="number" min="1" max="100" value={minimumBaselineValue} /> rpm
+								</div>
 							</div>
-							<div style={{ display: "flex" }}>
+							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum error rate:</div>
-								<div style={{ marginLeft: "auto" }}>0.1%</div>
+								<div style={{ marginLeft: "auto" }}>
+									<input type="number" min="1" max="100" value={minimumErrorRateValue} /> %
+								</div>
 							</div>
-							<div style={{ display: "flex" }}>
+							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum average duration:</div>
-								<div style={{ marginLeft: "auto" }}>?? ms</div>
+								<div style={{ marginLeft: "auto" }}>
+									<input type="number" min="1" max="100" value={minimumAverageDurationValue} /> ms
+								</div>
+							</div>
+							<div style={{ margin: "30px 0 10px 0" }} className="button-group">
+								<Button
+									style={{ width: "100px" }}
+									className="control-button"
+									type="button"
+									loading={false}
+									onClick={() => handleClickSubmit}
+								>
+									Submit
+								</Button>
+								<Button
+									style={{ width: "100px" }}
+									className="control-button cancel"
+									type="button"
+									onClick={() => dispatch(closeModal())}
+								>
+									Cancel
+								</Button>
 							</div>
 						</div>
 					</fieldset>
