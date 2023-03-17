@@ -6,6 +6,7 @@ import ScrollBox from "./ScrollBox";
 import { Dialog } from "../src/components/Dialog";
 import { Dropdown } from "../Stream/Dropdown";
 import Button from "./Button";
+import { useDidMount } from "../utilities/hooks";
 
 export const CLMSettings = () => {
 	const dispatch = useAppDispatch();
@@ -70,6 +71,11 @@ export const CLMSettings = () => {
 			action: () => setCompareDataLastValue("42"),
 		},
 	];
+
+	useDidMount(() => {
+		//@TODO: api call here to check and set change tracking boolean
+		setIsChangeTrackingEnabled(false);
+	});
 
 	const handleClickSubmit = () => {
 		console.warn("Submit button clicked");
