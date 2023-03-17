@@ -26,7 +26,6 @@ export const CLMSettings = () => {
 	const [minimumBaselineValue, setMinimumBaselineValue] = useState("30");
 	const [minimumErrorRateValue, setMinimumErrorRateValue] = useState("0.1");
 	const [minimumAverageDurationValue, setMinimumAverageDurationValue] = useState("10");
-
 	const compareDataLastItems = [
 		{
 			label: "7",
@@ -84,7 +83,7 @@ export const CLMSettings = () => {
 						<div id="controls">
 							{!isChangeTrackingEnabled && (
 								<>
-									<div style={{ display: "flex" }}>
+									<div style={{ display: "flex", marginTop: "10px" }}>
 										<div>Compare data from the last:</div>
 										<div style={{ marginLeft: "auto" }}>
 											<Dropdown
@@ -110,7 +109,7 @@ export const CLMSettings = () => {
 							)}
 							{isChangeTrackingEnabled && (
 								<>
-									<div style={{ display: "flex" }}>
+									<div style={{ display: "flex", marginTop: "10px" }}>
 										<div>Compare data from the most recent release that is at least:</div>
 										<div style={{ marginLeft: "auto" }}>7 days ago</div>
 									</div>
@@ -139,26 +138,30 @@ export const CLMSettings = () => {
 							<div style={{ marginTop: "20px", display: "flex" }}>
 								<div>Minimum change to be anomalous:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumChangeValue} /> %
+									<input type="number" min="1" max="100" value={minimumChangeValue} />
 								</div>
+								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>%</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum baseline sample size:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumBaselineValue} /> rpm
+									<input type="number" min="1" max="100" value={minimumBaselineValue} />
 								</div>
+								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>rpm</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum error rate:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumErrorRateValue} /> %
+									<input type="number" min="1" max="100" value={minimumErrorRateValue} />
 								</div>
+								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>%</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum average duration:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumAverageDurationValue} /> ms
+									<input type="number" min="1" max="100" value={minimumAverageDurationValue} />
 								</div>
+								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>ms</div>
 							</div>
 							<div style={{ margin: "30px 0 10px 0" }} className="button-group">
 								<Button
@@ -166,7 +169,7 @@ export const CLMSettings = () => {
 									className="control-button"
 									type="button"
 									loading={false}
-									onClick={() => handleClickSubmit}
+									onClick={() => handleClickSubmit()}
 								>
 									Submit
 								</Button>

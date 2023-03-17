@@ -36,11 +36,13 @@ export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props)
 		setFilteredErrors(_filteredErrors || []);
 	}, [props.observabilityAnomalies]);
 
-	//@TODO make this a general utility
 	const getRoundedPercentage = ratio => {
 		const percentage = (ratio - 1) * 100;
 		const factor = Math.pow(10, 2);
 		const roundedPercentage = Math.floor(percentage * factor) / factor;
+		if (roundedPercentage > 0) {
+			return `+${roundedPercentage}%`;
+		}
 		return `${roundedPercentage}%`;
 	};
 
