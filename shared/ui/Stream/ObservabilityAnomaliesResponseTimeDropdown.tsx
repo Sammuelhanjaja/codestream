@@ -27,10 +27,11 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 	}, shallowEqual);
 
 	//@TODO make this a general utility
-	const getRoundedPercentage = number => {
-		const factor = Math.pow(10, 4);
-		const roundedNumber = Math.floor(number * factor) / factor;
-		return `${roundedNumber * 100}%`;
+	const getRoundedPercentage = ratio => {
+		const percentage = (ratio - 1) * 100;
+		const factor = Math.pow(10, 2);
+		const roundedPercentage = Math.floor(percentage * factor) / factor;
+		return `${roundedPercentage}%`;
 	};
 
 	const [expanded, setExpanded] = useState<boolean>(true);
