@@ -7,6 +7,7 @@ import { Dialog } from "../src/components/Dialog";
 import { Dropdown } from "../Stream/Dropdown";
 import Button from "./Button";
 import { useDidMount } from "../utilities/hooks";
+import { RadioGroup, Radio } from "../src/components/RadioGroup";
 
 export const CLMSettings = () => {
 	const dispatch = useAppDispatch();
@@ -20,8 +21,10 @@ export const CLMSettings = () => {
 			currentUserId,
 		};
 	});
+	//@TODO: Setup default values to take user preference value by default if one exists
 	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(false);
 	const [compareDataLastValue, setCompareDataLastValue] = useState("7");
+	const [compareDataLastReleaseValue, setCompareDataLastReleaseValue] = useState("7");
 	const [againstDataPrecedingValue, setAgainstDataPrecedingValue] = useState("21");
 	const [minimumChangeValue, setMinimumChangeValue] = useState("10");
 	const [minimumBaselineValue, setMinimumBaselineValue] = useState("30");
@@ -47,6 +50,28 @@ export const CLMSettings = () => {
 			label: "28",
 			key: "28",
 			action: () => setCompareDataLastValue("28"),
+		},
+	];
+	const compareDataLastReleaseItems = [
+		{
+			label: "7",
+			key: "7",
+			action: () => setCompareDataLastReleaseValue("7"),
+		},
+		{
+			label: "14",
+			key: "14",
+			action: () => setCompareDataLastReleaseValue("14"),
+		},
+		{
+			label: "21",
+			key: "21",
+			action: () => setCompareDataLastReleaseValue("21"),
+		},
+		{
+			label: "28",
+			key: "28",
+			action: () => setCompareDataLastReleaseValue("28"),
 		},
 	];
 	const againstDataPrecedingItems = [
@@ -78,6 +103,16 @@ export const CLMSettings = () => {
 	});
 
 	const handleClickSubmit = () => {
+		//@TODO: api call using the following params (example):
+		// const params = {
+		// 	isChangeTrackingEnabled,
+		// 	compareDataLastValue,
+		// 	againstDataPrecedingValue,
+		// 	minimumChangeValue,
+		// 	minimumBaselineValue,
+		// 	minimumErrorRateValue,
+		// 	minimumAverageDurationValue,
+		// }
 		console.warn("Submit button clicked");
 	};
 
@@ -100,6 +135,10 @@ export const CLMSettings = () => {
 			default:
 				throw new Error("Invalid input name");
 		}
+	};
+
+	const handleRadioChange = e => {
+		console.warn("radio changed");
 	};
 
 	return (
@@ -136,20 +175,38 @@ export const CLMSettings = () => {
 							)}
 							{isChangeTrackingEnabled && (
 								<>
-									<div style={{ display: "flex", marginTop: "10px" }}>
-										<div>Compare data from the most recent release that is at least:</div>
-										<div style={{ marginLeft: "auto" }}>7 days ago</div>
-									</div>
-									<div style={{ display: "flex" }}>
-										<div>Compare data from the last:</div>
-										<div style={{ marginLeft: "auto" }}>
-											<Dropdown
-												selectedValue={compareDataLastValue}
-												items={compareDataLastItems}
-												noModal={true}
-											/>
-										</div>
-									</div>
+									<RadioGroup
+										selectedValue="1"
+										onChange={e => handleRadioChange(e)}
+										name="change-tracking"
+									>
+										<Radio value="1">
+											<div style={{ display: "flex", marginTop: "10px" }}>
+												<div>Compare data from the most recent release that is at least:</div>
+												<div style={{ marginLeft: "auto" }}>
+													<Dropdown
+														selectedValue={compareDataLastReleaseValue}
+														items={compareDataLastReleaseItems}
+														noModal={true}
+													/>{" "}
+													days ago
+												</div>
+											</div>
+										</Radio>
+										<Radio value="1">
+											<div style={{ display: "flex" }}>
+												<div>Compare data from the last:</div>
+												<div style={{ marginLeft: "auto" }}>
+													<Dropdown
+														selectedValue={compareDataLastValue}
+														items={compareDataLastItems}
+														noModal={true}
+													/>{" "}
+													days
+												</div>
+											</div>
+										</Radio>
+									</RadioGroup>
 									<div style={{ display: "flex" }}>
 										<div>Against data from the preceding:</div>
 										<div style={{ marginLeft: "auto" }}>
