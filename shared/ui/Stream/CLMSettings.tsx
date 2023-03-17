@@ -75,6 +75,27 @@ export const CLMSettings = () => {
 		console.warn("Submit button clicked");
 	};
 
+	const handleNumberChange = e => {
+		let { value, min, max, name } = e.target;
+		value = Math.max(Number(min), Math.min(Number(max), Number(value)));
+		switch (name) {
+			case "min-change":
+				setMinimumChangeValue(value);
+				break;
+			case "min-baseline":
+				setMinimumBaselineValue(value);
+				break;
+			case "min-error-rate":
+				setMinimumErrorRateValue(value);
+				break;
+			case "min-average-duration":
+				setMinimumAverageDurationValue(value);
+				break;
+			default:
+				throw new Error("Invalid input name");
+		}
+	};
+
 	return (
 		<Dialog wide title="Code-Level Metrics Settings" onClose={() => dispatch(closeModal())}>
 			<ScrollBox>
@@ -138,32 +159,68 @@ export const CLMSettings = () => {
 							<div style={{ marginTop: "20px", display: "flex" }}>
 								<div>Minimum change to be anomalous:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumChangeValue} />
+									<input
+										name="min-change"
+										type="number"
+										min="1"
+										max="100"
+										value={minimumChangeValue}
+										onChange={e => handleNumberChange(e)}
+									/>
 								</div>
 								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>%</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum baseline sample size:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumBaselineValue} />
+									<input
+										name="min-baseline"
+										type="number"
+										min="1"
+										max="100"
+										value={minimumBaselineValue}
+										onChange={e => handleNumberChange(e)}
+									/>
 								</div>
 								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>rpm</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum error rate:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumErrorRateValue} />
+									<input
+										name="min-error-rate"
+										type="number"
+										min="1"
+										max="100"
+										value={minimumErrorRateValue}
+										onChange={e => handleNumberChange(e)}
+									/>
 								</div>
 								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>%</div>
 							</div>
 							<div style={{ marginTop: "5px", display: "flex" }}>
 								<div>Minimum average duration:</div>
 								<div style={{ marginLeft: "auto" }}>
-									<input type="number" min="1" max="100" value={minimumAverageDurationValue} />
+									<input
+										name="min-average-duration"
+										type="number"
+										min="1"
+										max="100"
+										value={minimumAverageDurationValue}
+										onChange={e => handleNumberChange(e)}
+									/>
 								</div>
 								<div style={{ marginLeft: "5px", width: "24px", paddingTop: "2px" }}>ms</div>
 							</div>
 							<div style={{ margin: "30px 0 10px 0" }} className="button-group">
+								<Button
+									style={{ width: "100px" }}
+									className="control-button cancel"
+									type="button"
+									onClick={() => dispatch(closeModal())}
+								>
+									Cancel
+								</Button>
 								<Button
 									style={{ width: "100px" }}
 									className="control-button"
@@ -172,14 +229,6 @@ export const CLMSettings = () => {
 									onClick={() => handleClickSubmit()}
 								>
 									Submit
-								</Button>
-								<Button
-									style={{ width: "100px" }}
-									className="control-button cancel"
-									type="button"
-									onClick={() => dispatch(closeModal())}
-								>
-									Cancel
 								</Button>
 							</div>
 						</div>
