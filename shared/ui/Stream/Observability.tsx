@@ -633,6 +633,8 @@ export const Observability = React.memo((props: Props) => {
 		HostApi.instance
 			.send(GetObservabilityAnomaliesRequestType, {
 				entityGuid,
+				sinceDaysAgo: 2,
+				baselineDays: 5,
 			})
 			.then(response => {
 				setObservabilityAnomalies(response);

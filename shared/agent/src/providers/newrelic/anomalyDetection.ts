@@ -1,8 +1,10 @@
 import { SessionContainer } from "../../container";
 import {
 	AgentFilterNamespacesRequestType,
+	GetObservabilityAnomaliesRequest,
 	ObservabilityAnomaly,
 } from "@codestream/protocols/agent";
+import { NewRelicProvider } from "../newrelic";
 
 interface NameValue {
 	name: string;
@@ -18,24 +20,28 @@ interface Anomaly {
 
 export class AnomalyDetector {
 	constructor(
-		private entityGuid: string,
-		private accountId: number,
+		private _request: GetObservabilityAnomaliesRequest,
 		private _runNrql: <T>(accountId: number, nrql: string, timeout: number) => Promise<T[]>
-	) {}
+	) {
+		this._dataTimeFrame = `SINCE ${_request.sinceDaysAgo} days AGO`;
+		this._baselineTimeFrame = `SINCE ${
+			_request.sinceDaysAgo + _request.baselineDays
+		} days AGO UNTIL ${_request.sinceDaysAgo} days AGO`;
+		this._accountId = NewRelicProvider.parseId(_request.entityGuid)!.accountId;
+	}
 
-	async execute(options: {
-		includeSpans?: Boolean;
-		minimumErrorRate?: number;
-		minimumResponseTime?: number;
-		minimumSampleRate?: number;
-	}): Promise<{
+	private readonly _dataTimeFrame;
+	private readonly _baselineTimeFrame;
+	private readonly _accountId;
+
+	async execute(): Promise<{
 		responseTime: ObservabilityAnomaly[];
 		errorRate: ObservabilityAnomaly[];
 	}> {
-		const includeSpans = options.includeSpans || false;
-		const minimumErrorRate = options.minimumErrorRate || 0.001;
-		const minimumResponseTime = options.minimumResponseTime || 1;
-		const minimumSampleRate = options.minimumSampleRate || 30;
+		const includeSpans = this._request.includeSpans || true;
+		const minimumErrorRate = this._request.minimumErrorRate || 0.001;
+		const minimumResponseTime = this._request.minimumResponseTime || 1;
+		const minimumSampleRate = this._request.minimumSampleRate || 1;
 
 		const sampleRatesMetricLookup =
 			"(metricTimesliceName LIKE 'Java/%' OR metricTimesliceName LIKE 'Custom/%')";
@@ -103,17 +109,18 @@ export class AnomalyDetector {
 		const filteredMetricBaseline = metricBaseline.filter(metricFilter);
 		const metricComparison = this.compareData(filteredMetricData, filteredMetricBaseline);
 
-		const spanData = await this.getResponseTimeSpan(lookupSpan, this._dataTimeFrame);
-		const spanBaseline = await this.getResponseTimeSpan(lookupSpan, this._baselineTimeFrame);
-		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
-		const filteredSpanData = spanData.filter(spanFilter);
-		const filteredSpanBaseline = spanBaseline.filter(spanFilter);
-		const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
+		// const spanData = await this.getResponseTimeSpan(lookupSpan, this._dataTimeFrame);
+		// const spanBaseline = await this.getResponseTimeSpan(lookupSpan, this._baselineTimeFrame);
+		// const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
+		// const filteredSpanData = spanData.filter(spanFilter);
+		// const filteredSpanBaseline = spanBaseline.filter(spanFilter);
+		// const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
 
 		const consolidatedComparison = this.consolidateComparisons(
 			consolidatedSampleRates,
 			metricComparison,
-			spanComparison
+			[]
+			// spanComparison
 		).filter(_ => _.ratio > 1);
 
 		return consolidatedComparison.map(_ => this.comparisonToAnomaly(_));
@@ -136,18 +143,19 @@ export class AnomalyDetector {
 		const filteredMetricBaseline = metricBaseline.filter(metricFilter).map(metricTransformer);
 		const metricComparison = this.compareData(filteredMetricData, filteredMetricBaseline);
 
-		const spanData = await this.getErrorRateSpan(lookupSpan, this._dataTimeFrame);
-		const spanBaseline = await this.getErrorRateSpan(lookupSpan, this._baselineTimeFrame);
-		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
-		const spanTransformer = this.getErrorRateTransformer(sampleRatesSpan);
-		const filteredSpanData = spanData.filter(spanFilter).map(spanTransformer);
-		const filteredSpanBaseline = spanBaseline.filter(spanFilter).map(spanTransformer);
-		const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
+		// const spanData = await this.getErrorRateSpan(lookupSpan, this._dataTimeFrame);
+		// const spanBaseline = await this.getErrorRateSpan(lookupSpan, this._baselineTimeFrame);
+		// const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
+		// const spanTransformer = this.getErrorRateTransformer(sampleRatesSpan);
+		// const filteredSpanData = spanData.filter(spanFilter).map(spanTransformer);
+		// const filteredSpanBaseline = spanBaseline.filter(spanFilter).map(spanTransformer);
+		// const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
 
 		const consolidatedComparisons = this.consolidateComparisons(
 			consolidatedSampleRates,
 			metricComparison,
-			spanComparison
+			[]
+			// spanComparison
 		).filter(_ => _.ratio > 1 && _.newValue > minimumErrorRate);
 
 		return consolidatedComparisons.map(_ => this.comparisonToAnomaly(_));
@@ -217,17 +225,17 @@ export class AnomalyDetector {
 					});
 				}
 			} else {
-				const spanComparison = spanComparisons.find(_ => {
-					const symbol = this.extractSymbol(_.name);
-					const mySymbolStr = symbol.className + "/" + symbol.functionName;
-					return symbolStr === mySymbolStr;
-				});
-				if (spanComparison) {
-					consolidatedComparisons.push({
-						...spanComparison,
-						source: "span",
-					});
-				}
+				// const spanComparison = spanComparisons.find(_ => {
+				// 	const symbol = this.extractSymbol(_.name);
+				// 	const mySymbolStr = symbol.className + "/" + symbol.functionName;
+				// 	return symbolStr === mySymbolStr;
+				// });
+				// if (spanComparison) {
+				// 	consolidatedComparisons.push({
+				// 		...spanComparison,
+				// 		source: "span",
+				// 	});
+				// }
 			}
 		}
 
@@ -265,9 +273,6 @@ export class AnomalyDetector {
 		}
 		return consolidatedSampleRates;
 	}
-
-	private readonly _dataTimeFrame = "SINCE 7 days AGO";
-	private readonly _baselineTimeFrame = "SINCE 21 days AGO UNTIL 7 days AGO";
 
 	getCommonRoots(namespaces: string[]): string[] {
 		const namespaceTree = new Map<string, any>();
@@ -350,7 +355,7 @@ export class AnomalyDetector {
 	private getResponseTimeSpan(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT average(duration) * 1000 AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET name ` +
+			`FROM Span WHERE \`entity.guid\` = '${this._request.entityGuid}' AND (${lookup}) FACET name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
@@ -358,7 +363,7 @@ export class AnomalyDetector {
 	getResponseTimeMetric(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT average(newrelic.timeslice.value) * 1000 AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this._request.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
@@ -366,7 +371,7 @@ export class AnomalyDetector {
 	private getErrorRateSpan(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(*), 1 minute) AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND \`error.group.guid\` IS NOT NULL AND (${lookup}) FACET name ` +
+			`FROM Span WHERE \`entity.guid\` = '${this._request.entityGuid}' AND \`error.group.guid\` IS NOT NULL AND (${lookup}) FACET name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
@@ -374,7 +379,7 @@ export class AnomalyDetector {
 	private async getErrorRateMetric(lookup: string, timeFrame: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(apm.service.transaction.error.count), 1 minute) AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this._request.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
 		return this.runNrql(query);
 	}
@@ -382,7 +387,7 @@ export class AnomalyDetector {
 	private async getSampleRateSpan(timeFrame: string, lookup: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(*), 1 minute) AS 'value' ` +
-			`FROM Span WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET name ` +
+			`FROM Span WHERE \`entity.guid\` = '${this._request.entityGuid}' AND (${lookup}) FACET name ` +
 			`${timeFrame} LIMIT MAX`;
 
 		const sampleRates = await this.runNrql<NameValue>(query);
@@ -408,7 +413,7 @@ export class AnomalyDetector {
 	private async getSampleRateMetric(timeFrame: string, lookup: string): Promise<NameValue[]> {
 		const query =
 			`SELECT rate(count(newrelic.timeslice.value), 1 minute) AS 'value' ` +
-			`FROM Metric WHERE \`entity.guid\` = '${this.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
+			`FROM Metric WHERE \`entity.guid\` = '${this._request.entityGuid}' AND (${lookup}) FACET metricTimesliceName AS name ` +
 			`${timeFrame} LIMIT MAX`;
 		const sampleRates = await this.runNrql<NameValue>(query);
 		const filteredSampleRates = await this.filterSampleRates(sampleRates);
@@ -433,7 +438,7 @@ export class AnomalyDetector {
 	}
 
 	private runNrql<T>(nrql: string): Promise<T[]> {
-		return this._runNrql(this.accountId, nrql, 200);
+		return this._runNrql(this._accountId, nrql, 200);
 	}
 
 	private comparisonToAnomaly(comparison: {

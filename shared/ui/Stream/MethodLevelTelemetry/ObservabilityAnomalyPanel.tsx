@@ -107,7 +107,7 @@ export const ObservabilityAnomalyPanel = () => {
 					errorRate: anomaly.name,
 					sampleSize: anomaly.name,
 				},
-				since: "30 days ago",
+				since: "7 days ago",
 				timeseriesGroup: "1 day",
 			});
 			setTelemetryResponse(response);
