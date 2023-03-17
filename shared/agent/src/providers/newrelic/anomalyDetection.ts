@@ -23,10 +23,20 @@ export class AnomalyDetector {
 		private _runNrql: <T>(accountId: number, nrql: string, timeout: number) => Promise<T[]>
 	) {}
 
-	async execute(includeSpans: Boolean = false): Promise<{
+	async execute(options: {
+		includeSpans?: Boolean;
+		minimumErrorRate?: number;
+		minimumResponseTime?: number;
+		minimumSampleRate?: number;
+	}): Promise<{
 		responseTime: ObservabilityAnomaly[];
 		errorRate: ObservabilityAnomaly[];
 	}> {
+		const includeSpans = options.includeSpans || false;
+		const minimumErrorRate = options.minimumErrorRate || 0.001;
+		const minimumResponseTime = options.minimumResponseTime || 1;
+		const minimumSampleRate = options.minimumSampleRate || 30;
+
 		const sampleRatesMetricLookup =
 			"(metricTimesliceName LIKE 'Java/%' OR metricTimesliceName LIKE 'Custom/%')";
 		const sampleRatesMetric = await this.getSampleRateMetric(
@@ -56,7 +66,9 @@ export class AnomalyDetector {
 			spanLookup,
 			sampleRatesMetric,
 			sampleRatesSpan,
-			consolidatedSampleRates
+			consolidatedSampleRates,
+			minimumResponseTime,
+			minimumSampleRate
 		);
 
 		const errorRateAnomalies = await this.getErrorRateAnomalies(
@@ -64,7 +76,9 @@ export class AnomalyDetector {
 			spanLookup,
 			sampleRatesMetric,
 			sampleRatesSpan,
-			consolidatedSampleRates
+			consolidatedSampleRates,
+			minimumErrorRate,
+			minimumSampleRate
 		);
 
 		return {
@@ -78,18 +92,20 @@ export class AnomalyDetector {
 		lookupSpan: string,
 		sampleRatesMetric: NameValue[],
 		sampleRatesSpan: NameValue[],
-		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>
+		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>,
+		minimumResponseTime: number,
+		minimumSampleRate: number
 	): Promise<ObservabilityAnomaly[]> {
 		const metricData = await this.getResponseTimeMetric(lookupMetric, this._dataTimeFrame);
 		const metricBaseline = await this.getResponseTimeMetric(lookupMetric, this._baselineTimeFrame);
-		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric);
+		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric, minimumSampleRate);
 		const filteredMetricData = metricData.filter(metricFilter);
 		const filteredMetricBaseline = metricBaseline.filter(metricFilter);
 		const metricComparison = this.compareData(filteredMetricData, filteredMetricBaseline);
 
 		const spanData = await this.getResponseTimeSpan(lookupSpan, this._dataTimeFrame);
 		const spanBaseline = await this.getResponseTimeSpan(lookupSpan, this._baselineTimeFrame);
-		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan);
+		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
 		const filteredSpanData = spanData.filter(spanFilter);
 		const filteredSpanBaseline = spanBaseline.filter(spanFilter);
 		const spanComparison = this.compareData(filteredSpanData, filteredSpanBaseline);
@@ -98,7 +114,7 @@ export class AnomalyDetector {
 			consolidatedSampleRates,
 			metricComparison,
 			spanComparison
-		).filter(_ => _.ratio > 0);
+		).filter(_ => _.ratio > 1);
 
 		return consolidatedComparison.map(_ => this.comparisonToAnomaly(_));
 	}
@@ -108,11 +124,13 @@ export class AnomalyDetector {
 		lookupSpan: string,
 		sampleRatesMetric: NameValue[],
 		sampleRatesSpan: NameValue[],
-		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>
+		consolidatedSampleRates: Map<string, { span?: NameValue; metric?: NameValue }>,
+		minimumErrorRate: number,
+		minimumSampleRate: number
 	) {
 		const metricData = await this.getErrorRateMetric(lookupMetric, this._dataTimeFrame);
 		const metricBaseline = await this.getErrorRateMetric(lookupMetric, this._baselineTimeFrame);
-		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric);
+		const metricFilter = this.getSampleRateFilterPredicate(sampleRatesMetric, minimumSampleRate);
 		const metricTransformer = this.getErrorRateTransformer(sampleRatesMetric);
 		const filteredMetricData = metricData.filter(metricFilter).map(metricTransformer);
 		const filteredMetricBaseline = metricBaseline.filter(metricFilter).map(metricTransformer);
@@ -120,7 +138,7 @@ export class AnomalyDetector {
 
 		const spanData = await this.getErrorRateSpan(lookupSpan, this._dataTimeFrame);
 		const spanBaseline = await this.getErrorRateSpan(lookupSpan, this._baselineTimeFrame);
-		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan);
+		const spanFilter = this.getSampleRateFilterPredicate(sampleRatesSpan, minimumSampleRate);
 		const spanTransformer = this.getErrorRateTransformer(sampleRatesSpan);
 		const filteredSpanData = spanData.filter(spanFilter).map(spanTransformer);
 		const filteredSpanBaseline = spanBaseline.filter(spanFilter).map(spanTransformer);
@@ -130,15 +148,15 @@ export class AnomalyDetector {
 			consolidatedSampleRates,
 			metricComparison,
 			spanComparison
-		).filter(_ => _.ratio > 0 && _.newValue > 0.001);
+		).filter(_ => _.ratio > 1 && _.newValue > minimumErrorRate);
 
 		return consolidatedComparisons.map(_ => this.comparisonToAnomaly(_));
 	}
 
-	private getSampleRateFilterPredicate(sampleRates: NameValue[]) {
+	private getSampleRateFilterPredicate(sampleRates: NameValue[], minimumSampleRate: number) {
 		return (data: NameValue) => {
 			const sampleRate = sampleRates.find(sampleRate => data.name === sampleRate.name);
-			return sampleRate && sampleRate.value >= 10; // >= 1 rpm
+			return sampleRate && sampleRate.value >= minimumSampleRate;
 		};
 	}
 

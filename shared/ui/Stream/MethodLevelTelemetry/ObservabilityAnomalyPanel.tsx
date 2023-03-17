@@ -244,10 +244,11 @@ export const ObservabilityAnomalyPanel = () => {
 						whiteSpace: "nowrap",
 						overflow: "hidden",
 						textOverflow: "ellipsis",
+						direction: "rtl",
 					}}
 				>
 					<PanelHeader
-						title={derivedState.currentObservabilityAnomaly.functionName + " telemetry"}
+						title={derivedState.currentObservabilityAnomaly.text + " telemetry"}
 					></PanelHeader>
 				</div>
 			)}
