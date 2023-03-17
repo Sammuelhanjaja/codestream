@@ -7,7 +7,9 @@ import {
 	StatusContext,
 } from "@codestream/protocols/agent";
 import { CSMe, PullRequestQuery } from "@codestream/protocols/api";
-import { OpenUrlRequestType } from "@codestream/protocols/webview";
+import {
+	OpenUrlRequestType,
+} from "@codestream/protocols/webview";
 import cx from "classnames";
 import copy from "copy-to-clipboard";
 import { groupBy as _groupBy, map as _map, pickBy as _pickBy, reduce as _reduce } from "lodash-es";
@@ -15,7 +17,6 @@ import React, { useCallback, useEffect, useMemo, useReducer, useState } from "re
 import styled from "styled-components";
 import { Button } from "../../../src/components/Button";
 import { InlineMenu } from "../../../src/components/controls/InlineMenu";
-import { Dialog } from "../../../src/components/Dialog";
 import { PRHeadshot } from "../../../src/components/Headshot";
 import { PRHeadshotName } from "../../../src/components/HeadshotName";
 import { LoadingMessage } from "../../../src/components/LoadingMessage";
@@ -30,7 +31,6 @@ import { setUserPreference } from "../../actions";
 import { DropdownButton } from "../../DropdownButton";
 import Icon from "../../Icon";
 import { Link } from "../../Link";
-import { Modal } from "../../Modal";
 import { autoCheckedMergeabilityStatus } from "./PullRequest";
 import { PullRequestBottomComment } from "../../PullRequestBottomComment";
 import {
@@ -340,38 +340,6 @@ export const PullRequestConversationTab = (props: {
 		},
 		[pr.providerId, derivedState.currentPullRequestId!, defaultMergeMethod, mergeMethod]
 	);
-
-	const lockPullRequest = async () => {
-		setIsLoadingLocking(true);
-		let reason = "";
-		switch (isLockingReason) {
-			case "Off-topic":
-				reason = "OFF_TOPIC";
-				break;
-			case "Too heated":
-				reason = "TOO_HEATED";
-				break;
-			case "Spam":
-				reason = "SPAM";
-				break;
-			case "Resolved":
-				reason = "RESOLVED";
-				break;
-		}
-
-		await dispatch(api({ method: "lockPullRequest", params: { lockReason: reason } }));
-
-		setIsLocking(false);
-		setIsLoadingLocking(false);
-	};
-
-	const unlockPullRequest = async () => {
-		setIsLoadingLocking(true);
-		await dispatch(api({ method: "unlockPullRequest", params: {} }));
-
-		setIsLocking(false);
-		setIsLoadingLocking(false);
-	};
 
 	const numParticpants = ((pr.participants && pr.participants.nodes) || []).length;
 	const participantsLabel = `${numParticpants} Participant${numParticpants == 1 ? "" : "s"}`;
@@ -923,90 +891,6 @@ export const PullRequestConversationTab = (props: {
 
 	return (
 		<PRContent>
-			{isLocking && (
-				<Modal translucent verticallyCenter>
-					{pr.locked ? (
-						<Dialog
-							title="Unlock conversation on this pull request"
-							onClose={() => setIsLocking(false)}
-							narrow
-						>
-							<UL>
-								<li>
-									<b>Everyone</b> will be able to comment on this pull request once more.
-								</li>
-								<li>You can always lock this pull request again in the future.</li>
-							</UL>
-							<Button fillParent onClick={() => unlockPullRequest()} isLoading={isLoadingLocking}>
-								Unlock conversation on this pull request
-							</Button>
-						</Dialog>
-					) : (
-						<Dialog
-							title="Lock conversation on this pull request"
-							onClose={() => setIsLocking(false)}
-							narrow
-						>
-							<UL>
-								<li>
-									Other users <b>can’t add new comments</b> to this pull request.
-								</li>
-								<li>
-									You and other members of teams with write access to this repository{" "}
-									<b>can still leave comments</b> that others can see.
-								</li>
-								<li>You can always unlock this pull request again in the future.</li>
-							</UL>
-							<b>Reason for locking</b>
-							<div style={{ margin: "5px 0" }}>
-								<InlineMenu
-									items={[
-										{
-											label: "Choose a reason",
-											key: "choose",
-											action: () => setIsLockingReason("Choose a reason"),
-										},
-										{
-											label: "Off-topic",
-											key: "topic",
-											action: () => setIsLockingReason("Off-topic"),
-										},
-										{
-											label: "Too heated",
-											key: "heated",
-											action: () => setIsLockingReason("Too heated"),
-										},
-										{
-											label: "Resolved",
-											key: "resolved",
-											action: () => setIsLockingReason("Resolved"),
-										},
-										{ label: "Spam", key: "spam", action: () => setIsLockingReason("Spam") },
-									]}
-								>
-									{isLockingReason || "Choose a reason"}
-								</InlineMenu>
-							</div>
-							<div className="subtle" style={{ fontSize: "smaller", margin: "10px 0 20px 0" }}>
-								Optionally, choose a reason for locking that others can see. Learn more about when
-								it’s appropriate to{" "}
-								<Link href="https://docs.github.com/en/github/building-a-strong-community/locking-conversations">
-									lock conversations
-								</Link>
-								.
-							</div>
-							<Button
-								fillParent
-								disabled={!isLockingReason || isLockingReason === "Choose a reason"}
-								onClick={() => lockPullRequest()}
-								isLoading={isLoadingLocking}
-							>
-								Lock conversation on this pull request
-							</Button>
-						</Dialog>
-					)}
-				</Modal>
-			)}
 			<div className="main-content">
 				<PRConversation>
 					{/* in the GH data model, the top box is part of the pr, rather than the timeline */}
@@ -1570,17 +1454,30 @@ export const PullRequestConversationTab = (props: {
 					<h1>{participantsLabel}</h1>
 					<PRHeadshots>
 						{pr.participants &&
-							pr.participants.nodes.map((_: any) => (
-								<PRHeadshot
-									display="inline-block"
-									key={_.user.links.avatar.href}
-									person={_}
-									size={20}
-								/>
-							))}
+							pr.participants.nodes.map((_: any) => {
+								let iconName = "";
+								if (_.state === "changes_requested") {
+									iconName = "no-entry";
+								} else if (_.approved) {
+									iconName = "checked-checkbox";
+								} else {
+									iconName = "circle";
+								}
+								return (
+									<>
+										<PRHeadshot
+											display="inline-block"
+											key={_.user.links.avatar.href}
+											person={_}
+											size={20}
+										/>
+										<Icon name={iconName} />
+									</>
+								);
+							})}
 					</PRHeadshots>
 				</PRSection>
-				{pr.viewerCanUpdate && (
+				{/* {pr.viewerCanUpdate && (
 					<PRSection style={{ borderBottom: "none" }}>
 						<h1 style={{ margin: 0 }}>
 							{pr.locked ? (
@@ -1596,7 +1493,7 @@ export const PullRequestConversationTab = (props: {
 							)}
 						</h1>
 					</PRSection>
-				)}
+				)} */}
 			</PRSidebar>
 		</PRContent>
 	);
