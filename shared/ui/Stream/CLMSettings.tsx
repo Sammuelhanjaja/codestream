@@ -171,6 +171,11 @@ export const CLMSettings = () => {
 											days
 										</div>
 									</div>
+									<div>
+										<span style={{ fontSize: "smaller" }}>
+											Set up change tracking to compare across releases
+										</span>
+									</div>
 								</>
 							)}
 							{isChangeTrackingEnabled && (
