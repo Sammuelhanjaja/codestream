@@ -231,6 +231,8 @@ export function reduceContext(
 			return { ...state, showFeedbackSmiley: action.payload };
 		case ContextActionsType.SetIssueProvider:
 			return { ...state, issueProvider: action.payload };
+		case ContextActionsType.SetRefreshAnomalies:
+			return { ...state, anomaliesNeedRefresh: action.payload };
 		case ContextActionsType.SetNewPostEntryPoint:
 			return { ...state, newPostEntryPoint: action.payload };
 		case ContextActionsType.SetNewPostDefaultText:

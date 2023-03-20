@@ -304,6 +304,9 @@ export const setShowFeedbackSmiley = (enabled: boolean) =>
 export const setIssueProvider = (providerId: string | undefined) =>
 	action(ContextActionsType.SetIssueProvider, providerId);
 
+export const setRefreshAnomalies = (anomaliesNeedRefresh: boolean | undefined) =>
+	action(ContextActionsType.SetRefreshAnomalies, anomaliesNeedRefresh);
+
 export const setNewPostEntry = (entryPoint: PostEntryPoint) =>
 	action(ContextActionsType.SetNewPostEntryPoint, entryPoint);
 

@@ -29,6 +29,8 @@ import styled from "styled-components";
 
 import { ObservabilityRelatedWrapper } from "@codestream/webview/Stream/ObservabilityRelatedWrapper";
 import { CurrentMethodLevelTelemetry } from "@codestream/webview/store/context/types";
+import { setRefreshAnomalies } from "../store/context/actions";
+
 import { HealthIcon } from "@codestream/webview/src/components/HealthIcon";
 import {
 	HostDidChangeWorkspaceFoldersNotificationType,
@@ -234,6 +236,8 @@ export const Observability = React.memo((props: Props) => {
 		const newRelicIsConnected =
 			providers["newrelic*com"] && isConnected(state, { id: "newrelic*com" });
 		const activeO11y = preferences.activeO11y;
+		const clmSettings = state.preferences.clmSettings || {};
+
 		return {
 			sessionStart: state.context.sessionStart,
 			newRelicIsConnected,
@@ -246,6 +250,8 @@ export const Observability = React.memo((props: Props) => {
 				{}) as CurrentMethodLevelTelemetry,
 			textEditorUri: state.editorContext.textEditorUri,
 			scmInfo: state.editorContext.scmInfo,
+			anomaliesNeedRefresh: state.context.anomaliesNeedRefresh,
+			clmSettings,
 		};
 	}, shallowEqual);
 
@@ -474,6 +480,12 @@ export const Observability = React.memo((props: Props) => {
 	}, [derivedState.newRelicIsConnected]);
 
 	useEffect(() => {
+		if (derivedState.anomaliesNeedRefresh) {
+			fetchAnomalies(expandedEntity!, currentRepoId);
+		}
+	}, [derivedState.anomaliesNeedRefresh]);
+
+	useEffect(() => {
 		if (
 			_isEmpty(derivedState.observabilityRepoEntities) &&
 			derivedState.currentMethodLevelTelemetry?.newRelicEntityGuid
@@ -633,8 +645,8 @@ export const Observability = React.memo((props: Props) => {
 		HostApi.instance
 			.send(GetObservabilityAnomaliesRequestType, {
 				entityGuid,
-				sinceDaysAgo: 2,
-				baselineDays: 5,
+				sinceDaysAgo: derivedState?.clmSettings?.compareDataLastValue || 2,
+				baselineDays: derivedState?.clmSettings?.againstDataPrecedingValue || 5,
 			})
 			.then(response => {
 				setObservabilityAnomalies(response);
@@ -645,11 +657,13 @@ export const Observability = React.memo((props: Props) => {
 				// }
 				loading(repoId, false);
 				setLoadingPane(undefined);
+				dispatch(setRefreshAnomalies(false));
 			})
 			.catch(_ => {
 				console.warn(_);
 				loading(repoId, false);
 				setLoadingPane(undefined);
+				dispatch(setRefreshAnomalies(false));
 			});
 	};
 

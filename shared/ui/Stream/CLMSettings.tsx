@@ -8,13 +8,13 @@ import { Dropdown } from "../Stream/Dropdown";
 import Button from "./Button";
 import { useDidMount } from "../utilities/hooks";
 import { RadioGroup, Radio } from "../src/components/RadioGroup";
+import { setUserPreference } from "../Stream/actions";
+import { setRefreshAnomalies } from "../store/context/actions";
 
 export const CLMSettings = () => {
 	const dispatch = useAppDispatch();
 	const derivedState = useAppSelector((state: CodeStreamState) => {
 		const clmSettings = state.preferences.clmSettings || {};
-		// console.log(state.preferences);
-		// dispatch(setUserPreference({ prefPath: ["sidebarPanes", paneId, "collapsed"], value }));
 		return {
 			clmSettings,
 		};
@@ -102,17 +102,23 @@ export const CLMSettings = () => {
 	});
 
 	const handleClickSubmit = () => {
-		//@TODO: api call using the following params (example):
-		// const params = {
-		// 	isChangeTrackingEnabled,
-		// 	compareDataLastValue,
-		// 	againstDataPrecedingValue,
-		// 	minimumChangeValue,
-		// 	minimumBaselineValue,
-		// 	minimumErrorRateValue,
-		// 	minimumAverageDurationValue,
-		// }
-		console.warn("Submit button clicked");
+		dispatch(
+			setUserPreference({
+				prefPath: ["clmSettings"],
+				value: {
+					["isChangeTrackingEnabled"]: isChangeTrackingEnabled,
+					["compareDataLastValue"]: compareDataLastValue,
+					["againstDataPrecedingValue"]: againstDataPrecedingValue,
+					["minimumChangeValue"]: minimumChangeValue,
+					["minimumBaselineValue"]: minimumBaselineValue,
+					["minimumErrorRateValue"]: minimumErrorRateValue,
+					["minimumAverageDurationValue"]: minimumAverageDurationValue,
+				},
+			})
+		);
+		dispatch(setRefreshAnomalies(true));
+
+		dispatch(closeModal());
 	};
 
 	const handleNumberChange = e => {
@@ -256,7 +262,7 @@ export const CLMSettings = () => {
 									<input
 										name="min-error-rate"
 										type="number"
-										min="1"
+										min="0"
 										max="100"
 										value={minimumErrorRateValue}
 										onChange={e => handleNumberChange(e)}

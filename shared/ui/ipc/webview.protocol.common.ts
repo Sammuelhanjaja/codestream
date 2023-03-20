@@ -181,6 +181,7 @@ export interface WebviewContext {
 		includeLatestCommit?: boolean;
 		openFirstDiff?: boolean;
 	};
+	anomaliesNeedRefresh?: boolean;
 	/**
 	 * This could be a real codeErorr.id or a PENDING-${id}
 	 */

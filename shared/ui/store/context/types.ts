@@ -30,6 +30,7 @@ export enum ContextActionsType {
 	SetFocusState = "@context/SetFocusState",
 	SetCurrentStream = "@context/SetCurrentStream",
 	SetIssueProvider = "@context/SetIssueProvider",
+	SetRefreshAnomalies = "@context/SetRefreshAnomalies",
 	SetCodemarksFileViewStyle = "@context/SetCodemarksFileViewStyle",
 	SetCodemarksShowArchived = "@context/SetCodemarksShowArchived",
 	SetCodemarksShowResolved = "@context/SetCodemarksShowResolved",
