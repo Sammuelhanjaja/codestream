@@ -192,7 +192,11 @@ export const CLMSettings = () => {
 									</div>
 									<div>
 										<span style={{ fontSize: "smaller" }}>
-											Set up change tracking to compare across releases
+											Set up{" "}
+											<a href="https://docs.newrelic.com/docs/change-tracking/change-tracking-introduction/">
+												change tracking
+											</a>{" "}
+											to compare across releases
 										</span>
 									</div>
 								</>
