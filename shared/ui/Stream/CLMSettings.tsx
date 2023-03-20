@@ -19,16 +19,34 @@ export const CLMSettings = () => {
 			clmSettings,
 		};
 	});
-	//@TODO: Setup default values to take user preference value by default if one exists
-	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(false);
-	const [changeTrackingRadioValue, setChangeTrackingRadioValue] = useState("LATEST_RELEASE");
-	const [compareDataLastValue, setCompareDataLastValue] = useState("7");
-	const [compareDataLastReleaseValue, setCompareDataLastReleaseValue] = useState("7");
-	const [againstDataPrecedingValue, setAgainstDataPrecedingValue] = useState("21");
-	const [minimumChangeValue, setMinimumChangeValue] = useState("10");
-	const [minimumBaselineValue, setMinimumBaselineValue] = useState("30");
-	const [minimumErrorRateValue, setMinimumErrorRateValue] = useState("0.1");
-	const [minimumAverageDurationValue, setMinimumAverageDurationValue] = useState("10");
+	const { clmSettings } = derivedState;
+	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(
+		clmSettings.isChangeTrackingEnabled || false
+	);
+	const [changeTrackingRadioValue, setChangeTrackingRadioValue] = useState(
+		clmSettings.changeTrackingRadioValue || "LATEST_RELEASE"
+	);
+	const [compareDataLastValue, setCompareDataLastValue] = useState(
+		clmSettings.compareDataLastValue || "7"
+	);
+	const [compareDataLastReleaseValue, setCompareDataLastReleaseValue] = useState(
+		clmSettings.compareDataLastReleaseValue || "7"
+	);
+	const [againstDataPrecedingValue, setAgainstDataPrecedingValue] = useState(
+		clmSettings.againstDataPrecedingValue || "21"
+	);
+	const [minimumChangeValue, setMinimumChangeValue] = useState(
+		clmSettings.minimumChangeValue || "10"
+	);
+	const [minimumBaselineValue, setMinimumBaselineValue] = useState(
+		clmSettings.minimumBaselineValue || "30"
+	);
+	const [minimumErrorRateValue, setMinimumErrorRateValue] = useState(
+		clmSettings.minimumErrorRateValue || "0.1"
+	);
+	const [minimumAverageDurationValue, setMinimumAverageDurationValue] = useState(
+		clmSettings.minimumAverageDurationValue || "10"
+	);
 	const compareDataLastItems = [
 		{
 			label: "7",
