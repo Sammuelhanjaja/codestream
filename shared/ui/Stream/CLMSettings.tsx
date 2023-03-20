@@ -23,6 +23,7 @@ export const CLMSettings = () => {
 	});
 	//@TODO: Setup default values to take user preference value by default if one exists
 	const [isChangeTrackingEnabled, setIsChangeTrackingEnabled] = useState(false);
+	const [changeTrackingRadioValue, setChangeTrackingRadioValue] = useState("LATEST_RELEASE");
 	const [compareDataLastValue, setCompareDataLastValue] = useState("7");
 	const [compareDataLastReleaseValue, setCompareDataLastReleaseValue] = useState("7");
 	const [againstDataPrecedingValue, setAgainstDataPrecedingValue] = useState("21");
@@ -137,17 +138,13 @@ export const CLMSettings = () => {
 		}
 	};
 
-	const handleRadioChange = e => {
-		console.warn("radio changed");
-	};
-
 	return (
 		<Dialog wide title="Code-Level Metrics Settings" onClose={() => dispatch(closeModal())}>
 			<ScrollBox>
 				<form className="standard-form vscroll">
 					<fieldset className="form-body">
 						<div id="controls">
-							{!isChangeTrackingEnabled && (
+							{isChangeTrackingEnabled && (
 								<>
 									<div style={{ display: "flex", marginTop: "10px" }}>
 										<div>Compare data from the last:</div>
@@ -178,39 +175,41 @@ export const CLMSettings = () => {
 									</div>
 								</>
 							)}
-							{isChangeTrackingEnabled && (
+							{!isChangeTrackingEnabled && (
 								<>
 									<RadioGroup
-										selectedValue="1"
-										onChange={e => handleRadioChange(e)}
+										selectedValue={changeTrackingRadioValue}
+										onChange={value => setChangeTrackingRadioValue(value)}
 										name="change-tracking"
 									>
-										<Radio value="1">
-											<div style={{ display: "flex", marginTop: "10px" }}>
-												<div>Compare data from the most recent release that is at least:</div>
-												<div style={{ marginLeft: "auto" }}>
-													<Dropdown
-														selectedValue={compareDataLastReleaseValue}
-														items={compareDataLastReleaseItems}
-														noModal={true}
-													/>{" "}
-													days ago
-												</div>
+										<div style={{ display: "flex", marginTop: "10px" }}>
+											<div style={{ width: "100%", marginRight: "5px" }}>
+												<Radio value="LATEST_RELEASE">
+													Compare data from the most recent release that is at least:
+												</Radio>
 											</div>
-										</Radio>
-										<Radio value="1">
-											<div style={{ display: "flex" }}>
-												<div>Compare data from the last:</div>
-												<div style={{ marginLeft: "auto" }}>
-													<Dropdown
-														selectedValue={compareDataLastValue}
-														items={compareDataLastItems}
-														noModal={true}
-													/>{" "}
-													days
-												</div>
+											<div style={{ marginLeft: "auto", minWidth: "24px" }}>
+												<Dropdown
+													selectedValue={compareDataLastReleaseValue}
+													items={compareDataLastReleaseItems}
+													noModal={true}
+												/>
 											</div>
-										</Radio>
+											<div style={{ minWidth: "55px" }}>days ago</div>
+										</div>
+										<div style={{ display: "flex" }}>
+											<div style={{ width: "100%", marginRight: "5px" }}>
+												<Radio value="LATEST_DAYS">Compare data from the last: </Radio>
+											</div>
+											<div style={{ marginLeft: "auto", minWidth: "24px" }}>
+												<Dropdown
+													selectedValue={compareDataLastValue}
+													items={compareDataLastItems}
+													noModal={true}
+												/>{" "}
+											</div>
+											<div>days</div>
+										</div>
 									</RadioGroup>
 									<div style={{ display: "flex" }}>
 										<div>Against data from the preceding:</div>
@@ -219,7 +218,8 @@ export const CLMSettings = () => {
 												selectedValue={againstDataPrecedingValue}
 												items={againstDataPrecedingItems}
 												noModal={true}
-											/>
+											/>{" "}
+											days
 										</div>
 									</div>
 								</>
