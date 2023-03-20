@@ -12,13 +12,11 @@ import { RadioGroup, Radio } from "../src/components/RadioGroup";
 export const CLMSettings = () => {
 	const dispatch = useAppDispatch();
 	const derivedState = useAppSelector((state: CodeStreamState) => {
-		const teamId = state.context.currentTeamId;
-		const team = state.teams[teamId];
-		const currentUserId = state.session.userId!;
+		const clmSettings = state.preferences.clmSettings || {};
+		// console.log(state.preferences);
+		// dispatch(setUserPreference({ prefPath: ["sidebarPanes", paneId, "collapsed"], value }));
 		return {
-			teamId,
-			team,
-			currentUserId,
+			clmSettings,
 		};
 	});
 	//@TODO: Setup default values to take user preference value by default if one exists
@@ -79,22 +77,22 @@ export const CLMSettings = () => {
 		{
 			label: "21",
 			key: "21",
-			action: () => setCompareDataLastValue("21"),
+			action: () => setAgainstDataPrecedingValue("21"),
 		},
 		{
 			label: "28",
 			key: "28",
-			action: () => setCompareDataLastValue("28"),
+			action: () => setAgainstDataPrecedingValue("28"),
 		},
 		{
 			label: "35",
 			key: "35",
-			action: () => setCompareDataLastValue("35"),
+			action: () => setAgainstDataPrecedingValue("35"),
 		},
 		{
 			label: "42",
 			key: "42",
-			action: () => setCompareDataLastValue("42"),
+			action: () => setAgainstDataPrecedingValue("42"),
 		},
 	];
 
@@ -144,7 +142,7 @@ export const CLMSettings = () => {
 				<form className="standard-form vscroll">
 					<fieldset className="form-body">
 						<div id="controls">
-							{isChangeTrackingEnabled && (
+							{!isChangeTrackingEnabled && (
 								<>
 									<div style={{ display: "flex", marginTop: "10px" }}>
 										<div>Compare data from the last:</div>
@@ -175,7 +173,7 @@ export const CLMSettings = () => {
 									</div>
 								</>
 							)}
-							{!isChangeTrackingEnabled && (
+							{isChangeTrackingEnabled && (
 								<>
 									<RadioGroup
 										selectedValue={changeTrackingRadioValue}
