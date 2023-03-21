@@ -7,16 +7,13 @@ import {
 	StatusContext,
 } from "@codestream/protocols/agent";
 import { CSMe, PullRequestQuery } from "@codestream/protocols/api";
-import {
-	OpenUrlRequestType,
-} from "@codestream/protocols/webview";
+import { OpenUrlRequestType } from "@codestream/protocols/webview";
 import cx from "classnames";
 import copy from "copy-to-clipboard";
 import { groupBy as _groupBy, map as _map, pickBy as _pickBy, reduce as _reduce } from "lodash-es";
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import styled from "styled-components";
 import { Button } from "../../../src/components/Button";
-import { InlineMenu } from "../../../src/components/controls/InlineMenu";
 import { PRHeadshot } from "../../../src/components/Headshot";
 import { PRHeadshotName } from "../../../src/components/HeadshotName";
 import { LoadingMessage } from "../../../src/components/LoadingMessage";
@@ -52,7 +49,6 @@ import {
 	PRFoot,
 	PRHeadshots,
 	PRIconButton,
-	PRReviewer,
 	PRSection,
 	PRSidebar,
 	PRStatusHeadshot,
@@ -1270,7 +1266,7 @@ export const PullRequestConversationTab = (props: {
 				/>
 			</div>
 			<PRSidebar>
-				<PRSection>
+				{/* <PRSection>
 					<h1>
 						<InlineMenu
 							className="subtle"
@@ -1332,7 +1328,7 @@ export const PullRequestConversationTab = (props: {
 								</PRReviewer>
 						  ))
 						: "No reviewers"}
-				</PRSection>
+				</PRSection> */}
 				{/* <PRSection> */}
 				{/* <h1> */}
 				{/* <InlineMenu
@@ -1456,12 +1452,13 @@ export const PullRequestConversationTab = (props: {
 						{pr.participants &&
 							pr.participants.nodes.map((_: any) => {
 								let iconName = "";
+								let className = "";
 								if (_.state === "changes_requested") {
 									iconName = "no-entry";
-								} else if (_.approved) {
-									iconName = "checked-checkbox";
+									className = "orange-background";
 								} else {
-									iconName = "circle";
+									iconName = "checked-checkbox";
+									className = "green-background";
 								}
 								return (
 									<>
@@ -1471,7 +1468,7 @@ export const PullRequestConversationTab = (props: {
 											person={_}
 											size={20}
 										/>
-										<Icon name={iconName} />
+										<Icon style={{ marginRight: "5px" }} name={iconName} />
 									</>
 								);
 							})}

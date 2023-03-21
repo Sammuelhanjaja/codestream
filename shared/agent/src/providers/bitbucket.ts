@@ -1069,6 +1069,12 @@ export class BitbucketProvider
 		return false;
 	};
 
+	private excludeNonActiveParticipants = (participants: any) => {
+		const filteredParticipants = participants.filter((_: { state: string }) => _.state !== null);
+		console.log("***************************filtered participants ", filteredParticipants);
+		return filteredParticipants;
+	};
+
 	private isChangesRequested = (participants: any) => {
 		if (participants.length) {
 			const changesRequestedParticipants = participants.filter(
@@ -1200,7 +1206,10 @@ export class BitbucketProvider
 				}
 			};
 
-			const isApproved = this.isPRApproved(pr.body.participants);
+			const newParticipantsArray = this.excludeNonActiveParticipants(pr.body.participants);
+			console.log("*********************newParticipantsArray ", newParticipantsArray);
+
+			const isApproved = this.isPRApproved(newParticipantsArray);
 
 			const viewerDidAuthor = isViewerDidAuthor();
 
@@ -1257,7 +1266,7 @@ export class BitbucketProvider
 							nodes: mappedTimelineItems,
 						},
 						participants: {
-							nodes: pr.body.participants,
+							nodes: newParticipantsArray,
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
@@ -1890,37 +1899,32 @@ export class BitbucketProvider
 		return this._isMatchingRemotePredicate;
 	}
 
-	// private _getUserRepos = async (ws: any) => {
-	// 	const workspaceSlugsArray = ws; // example: ["reneepetit", "reneepetit86"]
-	// 	const repoArr = workspaceSlugsArray.map(async (workspace: any) => {
-	// 		//list repositories in a workspace  repositories/{workspace}
-	// 		const reposInWorkspace = await this.get<BitbucketReposInWorkspace[]>(
-	// 			`/repositories/${workspace}`
-	// 		);
-	// 		//values.full_name
-	// 		let repoArray = [];
-	// 		repoArray.push(
-	// 			reposInWorkspace.body.filter(_ => {
-	// 				_.full_name; // example full name: "reneepetit/practice"
-	// 			})
-	// 		);
-	// 		return repoArray; //array of the repo full names inside a workspace - ex: ["reneepetit/practice", "reneepetit86/bitbucketpractice"]
-	// 	});
-	// 	return repoArr;
-	// };
+	private async _getUserRepos(workspaceSlugsArray: { slug: string }[]) {
+		let repoArray: { fullname: string }[] = [];
+		workspaceSlugsArray.forEach(async (workspace: { slug: string }) => {
+			//list repositories in a workspace  repositories/{workspace}
+			const reposInWorkspace = await this.get<BitbucketReposInWorkspace[]>(
+				`/repositories/${workspace.slug}`
+			);
+			//values.full_name
 
-	// private _getUserWorkspaces = async () => {
-	// 	//get all workspaces for a user: user/permissions/workspaces
-	// 	const reposInWorkspace = await this.get<BitbucketWorkspace[]>(`/user/permissions/workspaces`);
-	// 	//values.workspace.slug
-	// 	let workSpaceSlugArray = [];
-	// 	workSpaceSlugArray.push(
-	// 		reposInWorkspace.body.filter(_ => {
-	// 			_.workspace.slug; //example of a workspace slug = "reneepetit"
-	// 		})
-	// 	);
-	// 	return workSpaceSlugArray; //array of the workspace slugs for current user
-	// };
+			repoArray.push(
+				...reposInWorkspace.body.map(_ => {
+					return { fullname: _.full_name };
+				})
+			);
+		});
+		return repoArray;
+	}
+
+	private async _getUserWorkspaces(): Promise<{ slug: string }[]> {
+		//get all workspaces for a user: user/permissions/workspaces
+		const reposInWorkspace = await this.get<BitbucketWorkspace[]>(`/user/permissions/workspaces`);
+		//values.workspace.slug
+		return reposInWorkspace.body.map(workspace => {
+			return { slug: workspace.workspace.slug };
+		}); //array of the workspace slugs for current user
+	}
 
 	async getMyPullRequests(
 		request: GetMyPullRequestsRequest
@@ -2005,15 +2009,15 @@ export class BitbucketProvider
 			throw new Error(errString);
 		});
 
-		// const workspaceSlugsArr = this._getUserWorkspaces();
-		// const repoFullNameArr = this._getUserRepos(workspaceSlugsArr);
-		//repoFullNameArr should be array that looks like: ["reneepetit/practice", "reneepetit86/bitbucketpractice"]
+		const workspaceSlugsArr = await this._getUserWorkspaces();
+		const repoFullNameArr = await this._getUserRepos(workspaceSlugsArr);
+		//repoFullNameArr should be array that looks like: [slug: "reneepetit/practice", "reneepetit86/bitbucketpractice"]
 
 		items.forEach((item, index) => {
 			if (defaultReviewerCollection[index]) {
 				//look up default reviewer for each item in the repoFullNameArr
 				const defaultReviewers = this.get<BitbucketDefaultReviewer[]>(
-					`/repositories/reneepetit/practice/default-reviewers`
+					`/repositories/{workspace}/{reponame}/default-reviewers`
 					//insert each item in the repoFullNameArr into the default-reviewers api call
 				); //body.values.account_id = the default reviewers ID to see if it matches current user
 				item.body.values = item.body.values.filter(reviewer => reviewer.author.account_id);
