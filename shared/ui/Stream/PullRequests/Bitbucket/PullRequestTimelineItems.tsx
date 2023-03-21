@@ -1,7 +1,6 @@
 import { FetchThirdPartyPullRequestPullRequest } from "@codestream/protocols/agent";
 import { CSMe } from "@codestream/protocols/api";
 
-
 import {
 	getCurrentProviderPullRequest,
 	getProviderPullRequestCollaborators,
@@ -139,7 +138,7 @@ export const PullRequestTimelineItems = (props: PropsWithChildren<Props>) => {
 								text={pendingComments[pr.id]}
 								done={() => doneEditingComment(pr.id)}
 							/>
-						) : pr.description ? ( //this is where to fix it
+						) : pr.description ? (
 							<MarkdownText text={pr.description} isHtml={pr.bodyHTML ? true : false} inline />
 						) : (
 							<i>No description provided.</i>
@@ -158,72 +157,6 @@ export const PullRequestTimelineItems = (props: PropsWithChildren<Props>) => {
 			{timelineNodes.map((item, index) => {
 				const author = item.author || GHOST;
 				// console.warn("ITEM: ", index, item);
-				return (
-					<PRComment key={index}>
-						<PRHeadshot key={index} size={40} person={author} />
-						<PRCommentCard className={`dark-header${item.isMinimized ? " no-arrow" : ""}`}>
-							{item.isMinimized && !expandedComments[item.id] ? (
-								<PullRequestMinimizedComment
-									reason={item.minimizedReason}
-									onClick={() => expandComment(item.id)}
-								/>
-							) : (
-								<>
-									<PRCommentHeader>
-										<div>
-											<PRAuthor>{(author || GHOST).login}</PRAuthor> commented{" "}
-											<Timestamp time={item.createdAt!} relative />
-											{item.includesCreatedEdit ? <> • edited</> : ""}
-										</div>
-										<PRActionIcons>
-											<PRAuthorBadges pr={pr} node={item} />
-											<PullRequestReactButton
-												pr={pr}
-												targetId={item.id}
-												setIsLoadingMessage={setIsLoadingMessage}
-												reactionGroups={item.reactionGroups}
-											/>
-											<PullRequestCommentMenu
-												pr={pr}
-												setIsLoadingMessage={setIsLoadingMessage}
-												node={item}
-												nodeType="ISSUE_COMMENT"
-												viewerCanDelete={item.viewerCanDelete}
-												setEdit={setEditingComment}
-												quote={props.quote}
-											/>
-										</PRActionIcons>
-									</PRCommentHeader>
-									<PRCommentBody>
-										{editingComments[item.id] ? (
-											<PullRequestEditingComment
-												pr={pr}
-												setIsLoadingMessage={setIsLoadingMessage}
-												id={item.id}
-												isPending={item.state === "PENDING"}
-												type={"ISSUE"}
-												text={pendingComments[item.id]}
-												done={() => doneEditingComment(item.id)}
-											/>
-										) : (
-											<MarkdownText
-												text={item.bodyHTML ? item.bodyHTML : item.bodyText}
-												isHtml={item.bodyHTML ? true : false}
-												inline
-											/>
-										)}
-									</PRCommentBody>
-									<PullRequestReactions
-										pr={pr}
-										targetId={item.id}
-										setIsLoadingMessage={setIsLoadingMessage}
-										reactionGroups={item.reactionGroups}
-									/>
-								</>
-							)}
-						</PRCommentCard>
-					</PRComment>
-				);
 				return (
 					<PRComment key={index}>
 						<PRHeadshot key={index} size={40} person={author} />

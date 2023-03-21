@@ -33,6 +33,7 @@ export const PullRequestEditingComment = styled((props: Props) => {
 		setIsLoadingMessage("Updating Comment...");
 		try {
 			if (text == "" || text == props.text || text == props.pr.description) return;
+			//bitbucket is text == props.pr.description
 
 			await dispatch(
 				api({

@@ -1264,6 +1264,7 @@ export class BitbucketProvider
 						viewerDidAuthor: viewerDidAuthor,
 						viewerCanUpdate: viewerCanUpdate,
 						isApproved: isApproved,
+						id: pr.body.id,
 					} as any, //TODO: make this work
 				},
 			};
