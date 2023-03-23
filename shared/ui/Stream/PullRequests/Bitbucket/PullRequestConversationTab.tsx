@@ -1452,23 +1452,27 @@ export const PullRequestConversationTab = (props: {
 						{pr.participants &&
 							pr.participants.nodes.map((_: any) => {
 								let iconName = "";
-								let className = "";
+								let color = "";
 								if (_.state === "changes_requested") {
 									iconName = "no-entry";
-									className = "orange-background";
+									color = "orange";
 								} else {
 									iconName = "checked-checkbox";
-									className = "green-background";
+									color = "green";
 								}
+								const person = { avatarUrl: _.user.links.avatar.href, login: _.user.display_name };
 								return (
 									<>
 										<PRHeadshot
 											display="inline-block"
 											key={_.user.links.avatar.href}
-											person={_}
+											person={person}
 											size={20}
 										/>
-										<Icon style={{ marginRight: "5px" }} name={iconName} />
+										<Icon
+											style={{ verticalAlign: "25%", marginRight: "10px", color: color }}
+											name={iconName}
+										/>
 									</>
 								);
 							})}

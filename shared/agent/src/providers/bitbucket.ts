@@ -1,7 +1,7 @@
 "use strict";
 import * as qs from "querystring";
 
-import { flatten } from "lodash-es";
+import { flatten, uniq } from "lodash-es";
 import { URI } from "vscode-uri";
 import {
 	BitbucketBoard,
@@ -728,6 +728,9 @@ interface BitbucketPullRequest {
 	state: string;
 	title: string;
 	updated_on: string;
+	repository: {
+		full_name: string;
+	};
 	participants: {
 		type?: string;
 		user: {
@@ -1121,6 +1124,10 @@ export class BitbucketProvider
 				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/commits`
 			);
 
+			const diffstat = await this.get<BitbucketValues<BitbucketDiffStat[]>>(
+				`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/diffstat`
+			);
+
 			//get all users who have a permission of greater than read
 			const permissions = await this.get<any>(`/user/permissions/repositories?q=permission>"read"`); //TODO: fix any
 
@@ -1138,10 +1145,16 @@ export class BitbucketProvider
 				}
 			};
 
+			let lines_added_total = 0;
+			let lines_removed_total = 0;
+			diffstat.body.values.forEach(diff => {
+				lines_added_total += diff.lines_added;
+				lines_removed_total += diff.lines_removed;
+			});
+
 			const viewerCanUpdate = isViewerCanUpdate();
 
 			const commit_count = commits.body.values.length;
-			// console.log("**********************commit_count = ", commit_count, "****************************")
 
 			const listToTree: any = (
 				arr: { id: string; replies: any[]; parent: { id: string } }[] = []
@@ -1207,7 +1220,6 @@ export class BitbucketProvider
 			};
 
 			const newParticipantsArray = this.excludeNonActiveParticipants(pr.body.participants);
-			console.log("*********************newParticipantsArray ", newParticipantsArray);
 
 			const isApproved = this.isPRApproved(newParticipantsArray);
 
@@ -1244,6 +1256,8 @@ export class BitbucketProvider
 						},
 						comments: treeComments || [],
 						description: pr.body.description,
+						additions: lines_added_total,
+						deletions: lines_removed_total,
 						number: pr.body.id,
 						idComputed: JSON.stringify({
 							id: pr.body.id,
@@ -1618,22 +1632,16 @@ export class BitbucketProvider
 			`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/diffstat`
 		);
 
-		// const diffHunk = await this.get<BitbucketValues<BitbucketCodeBlock[]>>(
-		// 	`/repositories/${repoWithOwner}/pullrequests/${pullRequestId}/diff`
-		// );
-
 		const response = items.body.values.map(file => {
 			return {
 				sha: "", //TODO: fix this
 				filename: file.new?.path,
 				previousFilename: file.old?.path,
 				status: file.status,
-				// TODO start
 				additions: file?.lines_added,
 				changes: 0, //TODO: check documentation
 				deletions: file?.lines_removed,
 				patch: "",
-				// TODO end
 			} as FetchThirdPartyPullRequestFilesResponse;
 		});
 		return response;
@@ -1899,32 +1907,32 @@ export class BitbucketProvider
 		return this._isMatchingRemotePredicate;
 	}
 
-	private async _getUserRepos(workspaceSlugsArray: { slug: string }[]) {
-		let repoArray: { fullname: string }[] = [];
-		workspaceSlugsArray.forEach(async (workspace: { slug: string }) => {
-			//list repositories in a workspace  repositories/{workspace}
-			const reposInWorkspace = await this.get<BitbucketReposInWorkspace[]>(
-				`/repositories/${workspace.slug}`
-			);
-			//values.full_name
+	// private async _getUserRepos(workspaceSlugsArray: { slug: string }[]) {
+	// 	let repoArray: { fullname: string }[] = [];
+	// 	workspaceSlugsArray.forEach(async (workspace: { slug: string }) => {
+	// 		//list repositories in a workspace  repositories/{workspace}
+	// 		const reposInWorkspace = await this.get<BitbucketReposInWorkspace[]>(
+	// 			`/repositories/${workspace.slug}`
+	// 		);
+	// 		//values.full_name
 
-			repoArray.push(
-				...reposInWorkspace.body.map(_ => {
-					return { fullname: _.full_name };
-				})
-			);
-		});
-		return repoArray;
-	}
+	// 		repoArray.push(
+	// 			...reposInWorkspace.body.map(_ => {
+	// 				return { fullname: _.full_name };
+	// 			})
+	// 		);
+	// 	});
+	// 	return repoArray;
+	// }
 
-	private async _getUserWorkspaces(): Promise<{ slug: string }[]> {
-		//get all workspaces for a user: user/permissions/workspaces
-		const reposInWorkspace = await this.get<BitbucketWorkspace[]>(`/user/permissions/workspaces`);
-		//values.workspace.slug
-		return reposInWorkspace.body.map(workspace => {
-			return { slug: workspace.workspace.slug };
-		}); //array of the workspace slugs for current user
-	}
+	// private async _getUserWorkspaces(): Promise<{ slug: string }[]> {
+	// 	//get all workspaces for a user: user/permissions/workspaces
+	// 	const reposInWorkspace = await this.get<BitbucketWorkspace[]>(`/user/permissions/workspaces`);
+	// 	//values.workspace.slug
+	// 	return reposInWorkspace.body.map(workspace => {
+	// 		return { slug: workspace.workspace.slug };
+	// 	}); //array of the workspace slugs for current user
+	// }
 
 	async getMyPullRequests(
 		request: GetMyPullRequestsRequest
@@ -2009,19 +2017,35 @@ export class BitbucketProvider
 			throw new Error(errString);
 		});
 
-		const workspaceSlugsArr = await this._getUserWorkspaces();
-		const repoFullNameArr = await this._getUserRepos(workspaceSlugsArr);
+		// const workspaceSlugsArr = await this._getUserWorkspaces();
+		// const repoFullNameArr = await this._getUserRepos(workspaceSlugsArr);
 		//repoFullNameArr should be array that looks like: [slug: "reneepetit/practice", "reneepetit86/bitbucketpractice"]
 
-		items.forEach((item, index) => {
+		items.forEach(async (pullrequests, index) => {
 			if (defaultReviewerCollection[index]) {
-				//look up default reviewer for each item in the repoFullNameArr
-				const defaultReviewers = this.get<BitbucketDefaultReviewer[]>(
-					`/repositories/{workspace}/{reponame}/default-reviewers`
-					//insert each item in the repoFullNameArr into the default-reviewers api call
-				); //body.values.account_id = the default reviewers ID to see if it matches current user
-				item.body.values = item.body.values.filter(reviewer => reviewer.author.account_id);
-				//item.body.values = item.body.values where user_id equals the user - pull request objects
+				//find uniq list of repository.full_name from pullrequests as an array of strings
+				const newArray = [];
+				const uniqueFullNames = uniq(
+					pullrequests.body.values.map(pullrequest => pullrequest.repository.full_name)
+				);
+				//if there is nothing, nothing to do
+				if (uniqueFullNames.length) {
+					//else, for each iterate over them and call get default reviewer using that workspace/slug
+					uniqueFullNames.forEach(async fullname => {
+						const defaultReviewers = await this.get<BitbucketDefaultReviewer[]>(
+							`/repositories/${fullname}/default-reviewers`
+						);
+						if (defaultReviewers.body.values.length) {
+							const foundSelf = defaultReviewers.body.find(
+								_ => _.account_id === usernameResponse.body.account_id
+							);
+							if (foundSelf) {
+								//push into new array all PRs in pullreqeusts.body.values that have a matching full_name in uniqueFullNames
+								newArray.push(defaultReviewers);
+							}
+						}
+					});
+				}
 			}
 		});
 

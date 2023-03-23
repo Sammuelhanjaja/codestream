@@ -797,26 +797,8 @@ export const PullRequest = () => {
 								<PRBadge>{pr.commits.totalCount}</PRBadge>
 							</Tab>
 							<PRPlusMinus>
-								<span className="added">
-									+
-									{!pr.files
-										? 0
-										: pr.files.nodes
-												.map(_ => _.additions)
-												.reduce((acc, val) => acc + val, 0)
-												.toString()
-												.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-								</span>{" "}
-								<span className="deleted">
-									-
-									{!pr.files
-										? 0
-										: pr.files.nodes
-												.map(_ => _.deletions)
-												.reduce((acc, val) => acc + val, 0)
-												.toString()
-												.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-								</span>
+								<span className="added">+{pr.additions}</span>{" "}
+								<span className="deleted">-{pr.deletions}</span>
 							</PRPlusMinus>
 						</Tabs>
 					</PRHeader>
