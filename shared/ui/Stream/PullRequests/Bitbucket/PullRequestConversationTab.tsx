@@ -58,6 +58,7 @@ import { ColorDonut, PullRequestReviewStatus } from "../../PullRequestReviewStat
 import { GHOST, PullRequestTimelineItems } from "./PullRequestTimelineItems";
 import Timestamp from "../../Timestamp";
 import Tooltip from "../../Tooltip";
+import { BitbucketParticipantEditScreen } from "../Bitbucket/BitbucketParticipantEditScreen";
 
 // const emojiMap: { [key: string]: string } = require("../../agent/emoji/emojis.json");
 // const emojiRegex = /:([-+_a-z0-9]+):/g;
@@ -266,6 +267,8 @@ export const PullRequestConversationTab = (props: {
 	const [cloneURL, setCloneURL] = useState(pr && pr.repository ? `${pr.repository.url}.git` : "");
 	const [defaultQueries, setDefaultQueries] = React.useState({});
 	const [bottomCommentText, setBottomCommentText] = useState("");
+	const [isOpen, setIsOpen] = useState(false);
+	const [isAddOrRemove, setIsAddOrRemove] = useState("");
 
 	const __onDidRender = functions => {
 		insertText = functions.insertTextAtCursor;
@@ -1476,6 +1479,34 @@ export const PullRequestConversationTab = (props: {
 									</>
 								);
 							})}
+						{isOpen ? (
+							<BitbucketParticipantEditScreen
+								pr={pr}
+								addOrRemove={isAddOrRemove}
+								onClose={() => {
+									setIsOpen(false);
+								}}
+							></BitbucketParticipantEditScreen>
+						) : (
+							<>
+								<Button
+									onClick={() => {
+										setIsOpen(true);
+										setIsAddOrRemove("add");
+									}}
+								>
+									Add
+								</Button>
+								<Button
+									onClick={() => {
+										setIsOpen(true);
+										setIsAddOrRemove("remove");
+									}}
+								>
+									Remove
+								</Button>
+							</>
+						)}
 					</PRHeadshots>
 				</PRSection>
 				{/* {pr.viewerCanUpdate && (
