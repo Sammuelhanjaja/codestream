@@ -1060,6 +1060,9 @@ export class NewRelicProvider
 		return this._clmManager.getObservabilityResponseTimes(request);
 	}
 
+	private _observabilityAnomaliesTimedCache = new Cache<GetObservabilityAnomaliesResponse>({
+		defaultTtl: 120 * 1000,
+	});
 	@lspHandler(GetObservabilityAnomaliesRequestType)
 	@log({
 		timed: true,
@@ -1067,21 +1070,34 @@ export class NewRelicProvider
 	async getObservabilityAnomalies(
 		request: GetObservabilityAnomaliesRequest
 	): Promise<GetObservabilityAnomaliesResponse> {
-		try {
-			const { entityGuid } = request;
-			const { accountId } = NewRelicProvider.parseId(entityGuid)!;
-			const anomalyDetector = new AnomalyDetector(request, this.runNrql.bind(this));
-			const result = await anomalyDetector.execute();
+		const cached = this._observabilityAnomaliesTimedCache.get(request);
+		if (cached) {
+			return cached;
+		}
 
-			return result;
-		} catch (ex) {
-			Logger.warn(ex.message);
-			return {
+		let lastEx;
+		const fn = async () => {
+			try {
+				const { entityGuid } = request;
+				const { accountId } = NewRelicProvider.parseId(entityGuid)!;
+				const anomalyDetector = new AnomalyDetector(request, this.runNrql.bind(this));
+				const result = await anomalyDetector.execute();
+				this._observabilityAnomaliesTimedCache.put(request, result);
+				return true;
+			} catch (ex) {
+				Logger.warn(ex.message);
+				lastEx = ex.message;
+				return false;
+			}
+		};
+		await Functions.withExponentialRetryBackoff(fn, 5, 1000);
+		return (
+			this._observabilityAnomaliesTimedCache.get(request) || {
 				responseTime: [],
 				errorRate: [],
-				error: ex.message,
-			};
-		}
+				error: lastEx,
+			}
+		);
 	}
 
 	@log()
