@@ -96,6 +96,8 @@ export interface CreatePostRequest {
 	isPseudoCodemark?: boolean;
 	reviewCheckpoint?: number;
 	files?: Attachment[];
+	analyzeStacktrace?: boolean;
+	chat?: boolean;
 }
 
 export interface CrossPostIssueValues {
@@ -136,6 +138,19 @@ export const CreatePostRequestType = new RequestType<
 	void,
 	void
 >("codestream/posts/create");
+
+export type CreateStackTraceAnalyzeRequest = {
+	streamId: string;
+	stackTrace: string;
+}
+
+export const CreateStackTraceAnalyzeRequestType = new RequestType<
+	CreateStackTraceAnalyzeRequest,
+	CreatePostResponse,
+	void,
+	void
+>("codestream/posts/create");
+
 
 export interface CodeBlockSource {
 	file: string;

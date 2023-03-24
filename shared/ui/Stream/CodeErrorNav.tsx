@@ -747,14 +747,6 @@ export function CodeErrorNav(props: Props) {
 
 	if (error) {
 		// essentially a roadblock
-		logError(`${error?.title || "Error"}, Description: Internal Debugging Variables`, {
-			currentCodeErrorId: derivedState.currentCodeErrorId!,
-			errorGroupGuid: derivedState.codeError?.objectId || pendingErrorGroupGuid!,
-			parseableAccountId: derivedState.codeError?.objectId || pendingErrorGroupGuid!,
-			occurrenceId: occurrenceId,
-			entityGuid: derivedState.codeError?.objectInfo?.entityId,
-			timestamp: derivedState.currentCodeErrorData?.timestamp,
-		});
 		return (
 			<Dismissable
 				title={error.title || "Error"}

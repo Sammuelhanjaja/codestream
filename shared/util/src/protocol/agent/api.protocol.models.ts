@@ -372,7 +372,8 @@ export interface CSPost extends CSEntity {
 	seqNum: number | string;
 	hasBeenEdited: boolean;
 	mentionedUserIds?: string[];
-	origin?: "email" | "slack" | "msteams" | "editor";
+	origin?: "email" | "slack" | "msteams" | "editor" | "chatgpt";
+	originDetail?: string;
 	reactions?: { [key: string]: string[] };
 	codemarkId?: string;
 	reviewCheckpoint?: number;

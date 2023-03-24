@@ -253,7 +253,7 @@ export const Reply = (props: ReplyProps) => {
 	const numNestedReplies = props.nestedReplies ? props.nestedReplies.length : 0;
 	const hasNestedReplies = numNestedReplies > 0;
 
-	const postText = codemark != null ? codemark.text : props.post.text;
+	const postText = codemark != null ? codemark.text : props.post.text.replace("#chatgpt#", "");
 	const escapedPostText = escapeHtml(postText);
 	const [newReplyText, setNewReplyText] = React.useState(escapedPostText);
 
@@ -298,8 +298,11 @@ export const Reply = (props: ReplyProps) => {
 
 	const isEditing = props.editingPostId === props.post.id;
 	const checkpoint = props.post.reviewCheckpoint;
+	const isChatGpt = props.post.text.startsWith("#chatgpt#");
 
-	const author = props.author || { username: "???" };
+	const author = isChatGpt
+		? { username: "ChatGPT", id: "fake" }
+		: props.author ?? { username: "???" };
 
 	return (
 		<Root className={props.className}>
@@ -310,12 +313,12 @@ export const Reply = (props: ReplyProps) => {
 				{hasNestedReplies && <div className="bar-left-parent" />}
 				<AuthorInfo style={{ fontWeight: 700 }}>
 					{author.id && (
-						<ProfileLink id={props.author.id || ""}>
-							<Headshot size={20} person={props.author} />{" "}
+						<ProfileLink id={props.author.id ?? ""}>
+							<Headshot size={20} person={author} />{" "}
 						</ProfileLink>
 					)}
 					<span>
-						{props.author.username}
+						{author.username}
 						{emote}
 						{checkpoint && (
 							<span className="emote">

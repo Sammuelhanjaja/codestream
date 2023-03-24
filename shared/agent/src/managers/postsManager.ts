@@ -115,6 +115,7 @@ import { EntityManagerBase, Id } from "./entityManager";
 import { MarkersBuilder } from "./markersBuilder";
 
 import getProviderDisplayName = Marker.getProviderDisplayName;
+import { getChatResponse } from "../providers/chatgpt/chatGpt";
 
 export type FetchPostsFn = (request: FetchPostsRequest) => Promise<FetchPostsResponse>;
 
@@ -1891,20 +1892,32 @@ export class PostsManager extends EntityManagerBase<CSPost> {
 			}
 		} else {
 			// is CS team -- this createPost will create a Post and a Codemark
-			response = await this.session.api.createPost(request);
-			if (request.codemark) {
-				if (request.crossPostIssueValues) {
-					providerCardRequest = {
-						codemark: {
-							title: request.codemark.title,
-							text: request.codemark.text,
-							markers: response.markers,
-							permalink: response.codemark && response.codemark.permalink,
-						},
-						remotes: request.codemark.remotes,
-					};
+			const postMessages = new Array<CreatePostRequest>();
+			if (!request.analyzeStacktrace) {
+				postMessages.push({ ...request, chat: false });
+			}
+			if (request.analyzeStacktrace || request.chat) {
+				const chatResponse = await getChatResponse(
+					request.analyzeStacktrace ? `What does this error mean?\n${request.text}` : request.text
+				);
+				postMessages.push({ ...request, text: chatResponse });
+			}
+			for (const finalRequest of postMessages) {
+				response = await this.session.api.createPost(finalRequest);
+				if (request.codemark) {
+					if (request.crossPostIssueValues) {
+						providerCardRequest = {
+							codemark: {
+								title: request.codemark.title,
+								text: request.codemark.text,
+								markers: response.markers,
+								permalink: response.codemark && response.codemark.permalink,
+							},
+							remotes: request.codemark.remotes,
+						};
+					}
+					codemarkId = response.codemark && response.codemark.id;
 				}
-				codemarkId = response.codemark && response.codemark.id;
 			}
 		}
 

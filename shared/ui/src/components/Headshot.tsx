@@ -164,13 +164,20 @@ export const Headshot = styled((props: HeadshotProps) => {
 			onClick={props.onClick}
 		>
 			<StyledGravatar size={size} default="blank" protocol="https://" email={person.email} />
-			<Initials
-				hardRightBorder={props.hardRightBorder}
-				size={size}
-				color={Colors[person.color || 1]}
-			>
-				{initials}
-			</Initials>
+			{person.username === "ChatGPT" ? (
+				<Icon
+					name="comment"
+					style={{ transform: "scale(1.25)", marginTop: 2, display: "inline-block" }}
+				/>
+			) : (
+				<Initials
+					hardRightBorder={props.hardRightBorder}
+					size={size}
+					color={Colors[person.color || 1]}
+				>
+					{initials}
+				</Initials>
+			)}
 			{props.addThumbsUp && (
 				<ThumbsUp>
 					<Icon name="thumbsup" />
