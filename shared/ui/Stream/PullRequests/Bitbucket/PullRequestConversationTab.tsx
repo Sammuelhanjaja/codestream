@@ -344,6 +344,9 @@ export const PullRequestConversationTab = (props: {
 	const participantsLabel = `${numParticpants} Participant${numParticpants == 1 ? "" : "s"}`;
 	const prAuthorLogin = pr?.author?.login || GHOST;
 
+	const numReviewers = ((pr.reviewers && pr.reviewers.nodes) || []).length;
+	const reviewersLabel = `${numReviewers} Reviewer${numReviewers == 1 ? "" : "s"}`;
+
 	let reviewsHash: any = {};
 	let opinionatedReviewsHash: any = {};
 	// the list of reviewers isn't in a single spot...
@@ -1450,20 +1453,20 @@ export const PullRequestConversationTab = (props: {
 				</PRSection>
 				*/}
 				<PRSection>
-					<h1>{participantsLabel}</h1>
+					<h1>{reviewersLabel}</h1>
 					<PRHeadshots>
-						{pr.participants &&
-							pr.participants.nodes.map((_: any) => {
-								let iconName = "";
-								let color = "";
+						{pr.reviewers &&
+							pr.reviewers.nodes.map((_: any) => {
+								let iconName = "circle";
+								let color = "gray";
 								if (_.state === "changes_requested") {
 									iconName = "no-entry";
 									color = "orange";
-								} else {
+								} else if (_.state === "approved") {
 									iconName = "checked-checkbox";
 									color = "green";
 								}
-								const person = { avatarUrl: _.user.links.avatar.href, login: _.user.display_name };
+								const person = { avatarUrl: _.user.links.avatar.href, login: _.user.nickname };
 								return (
 									<>
 										<PRHeadshot
@@ -1509,6 +1512,39 @@ export const PullRequestConversationTab = (props: {
 						)}
 					</PRHeadshots>
 				</PRSection>
+				<PRSection>
+					<h1>{participantsLabel}</h1>
+					<PRHeadshots>
+						{pr.participants &&
+							pr.participants.nodes.map((_: any) => {
+								let iconName = "circle";
+								let color = "gray";
+								if (_.state === "changes_requested") {
+									iconName = "no-entry";
+									color = "orange";
+								} else if (_.state === "approved") {
+									iconName = "checked-checkbox";
+									color = "green";
+								}
+								const person = { avatarUrl: _.user.links.avatar.href, login: _.user.nickname };
+								return (
+									<>
+										<PRHeadshot
+											display="inline-block"
+											key={_.user.links.avatar.href}
+											person={person}
+											size={20}
+										/>
+										<Icon
+											style={{ verticalAlign: "25%", marginRight: "10px", color: color }}
+											name={iconName}
+										/>
+									</>
+								);
+							})}
+					</PRHeadshots>
+				</PRSection>
+
 				{/* {pr.viewerCanUpdate && (
 					<PRSection style={{ borderBottom: "none" }}>
 						<h1 style={{ margin: 0 }}>

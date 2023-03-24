@@ -444,6 +444,25 @@ interface BitbucketRepoFull extends BitbucketRepo {
 		state?: string;
 		participated_on?: string;
 	}[];
+	reviewers?: {
+		type?: string;
+		user?: {
+			display_name?: string;
+			links?: {
+				avatar?: {
+					href?: string;
+				};
+			};
+			type?: string;
+			uuid?: string;
+			account_id?: string;
+			nickname?: string;
+		};
+		role?: string;
+		approved?: boolean;
+		state?: string;
+		participated_on?: string;
+	}[];
 }
 
 interface BitbucketDefaultReviewer {
@@ -749,6 +768,25 @@ interface BitbucketPullRequest {
 		approved: boolean;
 		state: string; // approved, changes_requested, null
 		participated_on: string;
+	}[];
+	reviewers?: {
+		type?: string;
+		user?: {
+			display_name?: string;
+			links?: {
+				avatar?: {
+					href?: string;
+				};
+			};
+			type?: string;
+			uuid?: string;
+			account_id?: string;
+			nickname?: string;
+		};
+		role?: string;
+		approved?: boolean;
+		state?: string;
+		participated_on?: string;
 	}[];
 }
 
@@ -1073,9 +1111,14 @@ export class BitbucketProvider
 	};
 
 	private excludeNonActiveParticipants = (participants: any) => {
-		const filteredParticipants = participants.filter((_: { state: string }) => _.state !== null);
-		console.log("***************************filtered participants ", filteredParticipants);
+		const nonReviewers = participants.filter((_: { role: string }) => _.role !== "REVIEWER");
+		const filteredParticipants = nonReviewers.filter((_: { state: string }) => _.state !== null);
 		return filteredParticipants;
+	};
+
+	private separateReviewers = (participants: any) => {
+		const reviewers = participants.filter((_: { role: string }) => _.role !== "PARTICIPANT");
+		return reviewers;
 	};
 
 	private isChangesRequested = (participants: any) => {
@@ -1220,6 +1263,7 @@ export class BitbucketProvider
 			};
 
 			const newParticipantsArray = this.excludeNonActiveParticipants(pr.body.participants);
+			const newReviewersArray = this.separateReviewers(pr.body.participants);
 
 			const isApproved = this.isPRApproved(newParticipantsArray);
 
@@ -1281,6 +1325,9 @@ export class BitbucketProvider
 						},
 						participants: {
 							nodes: newParticipantsArray,
+						},
+						reviewers: {
+							nodes: newReviewersArray,
 						},
 						url: pr.body.links.html.href,
 						viewer: viewer,
