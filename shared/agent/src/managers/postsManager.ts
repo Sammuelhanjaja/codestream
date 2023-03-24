@@ -1894,12 +1894,15 @@ export class PostsManager extends EntityManagerBase<CSPost> {
 			// is CS team -- this createPost will create a Post and a Codemark
 			const postMessages = new Array<CreatePostRequest>();
 			if (!request.analyzeStacktrace) {
+				// First message is from user
 				postMessages.push({ ...request, chat: false });
 			}
 			if (request.analyzeStacktrace || request.chat) {
 				const chatResponse = await getChatResponse(
+					request.streamId,
 					request.analyzeStacktrace ? `What does this error mean?\n${request.text}` : request.text
 				);
+				// Second message is ChatGPT response
 				postMessages.push({ ...request, text: chatResponse });
 			}
 			for (const finalRequest of postMessages) {

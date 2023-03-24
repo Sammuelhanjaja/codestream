@@ -5,10 +5,9 @@ import fs from "fs";
 import { ResponseError } from "vscode-jsonrpc/lib/messages";
 import { ERROR_CHATGPT_LICENSE } from "@codestream/protocols/agent";
 import os from "os";
+import Cache from "timed-cache";
 
 const apiUrl = "https://api.openai.com/v1/chat/completions";
-
-type ChatGptMessage = { role: string; content: string; finish_reason: string; index: number };
 
 const codeStreamDirectory = path.join(os.homedir(), ".codestream");
 
@@ -21,6 +20,8 @@ const getApiKey = memoize((): string | undefined => {
 	return license.trim();
 });
 
+type ChatGptMessage = { role: string; content: string };
+
 type ChatGptUsage = {
 	prompt_tokens: number;
 	completion_tokens: number;
@@ -28,7 +29,9 @@ type ChatGptUsage = {
 };
 
 type ChatGptChoices = {
+	finish_reason: string;
 	message: ChatGptMessage;
+	index: number;
 };
 
 type ChatGptResponse = {
@@ -40,11 +43,26 @@ type ChatGptResponse = {
 	choices: ChatGptChoices[];
 };
 
-export async function getChatResponse(prompt: string): Promise<string> {
+type ChatApiResponse = string;
+
+const conversationCache = new Cache<Array<ChatGptMessage>>({ defaultTtl: 300 * 60 * 1000 });
+
+export async function getChatResponse(
+	id: string,
+	prompt: string,
+	role = "user"
+): Promise<ChatApiResponse> {
+	let conversation = conversationCache.get(id);
+	if (!conversation) {
+		conversation = new Array<ChatGptMessage>();
+		conversationCache.put(id, conversation);
+	}
+	conversation.push({ role, content: prompt });
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		throw new ResponseError(ERROR_CHATGPT_LICENSE, "Could not find chatgpt license");
 	}
+
 	const response = await customFetch(apiUrl, {
 		method: "POST",
 		headers: {
@@ -53,12 +71,14 @@ export async function getChatResponse(prompt: string): Promise<string> {
 		},
 		body: JSON.stringify({
 			model: "gpt-3.5-turbo",
-			messages: [{ role: "user", content: prompt }],
+			messages: conversation,
 		}),
 	});
 
-	const json: ChatGptResponse = await response.json();
-	return `#chatgpt#${json.choices[0].message.content}`;
+	const apiResponse: ChatGptResponse = await response.json();
+	const responseMessage = `${apiResponse.choices[0].message.content}`;
+	conversation.push({ role: "assistant", content: responseMessage });
+	return `#chatgpt#${responseMessage}`;
 
 	// const data: { choices: ChatResponse[] } = await response.json();
 	// return data.choices[0].text.trim();

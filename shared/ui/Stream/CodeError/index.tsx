@@ -5,7 +5,7 @@ import {
 	ResolveStackTraceResponse,
 } from "@codestream/protocols/agent";
 import { CSCodeError, CSPost, CSUser } from "@codestream/protocols/api";
-import React, { PropsWithChildren, useEffect } from "react";
+import React, { PropsWithChildren, SyntheticEvent, useEffect } from "react";
 import { useSelector } from "react-redux";
 import styled from "styled-components";
 
@@ -88,6 +88,8 @@ interface SimpleError {
 type SubmitType = "normal" | "analyze" | "chat";
 
 export interface BaseCodeErrorProps extends CardProps {
+	analyzeClick: (event: SyntheticEvent) => void;
+	analyzeStackTrace: boolean;
 	codeError: CSCodeError;
 	errorGroup?: NewRelicErrorGroup;
 	parsedStack?: ResolveStackTraceResponse;
@@ -1217,7 +1219,7 @@ const BaseCodeError = (props: BaseCodeErrorProps) => {
 			return (
 				<MetaSection>
 					<Meta id="stack-trace" className={props.stackTraceTip ? "pulse" : ""}>
-						<MetaLabel>Stack Trace One</MetaLabel>
+						<MetaLabel>Stack Trace</MetaLabel>
 						<TourTip title={props.stackTraceTip} placement="bottom">
 							<ClickLines tabIndex={0} onKeyDown={handleKeyDown} className="code">
 								{(stackTrace || []).map((line, i) => {
@@ -1256,7 +1258,9 @@ const BaseCodeError = (props: BaseCodeErrorProps) => {
 								})}
 							</ClickLines>
 						</TourTip>
-						<Link>Analyze with ChatGPT</Link>
+						{!props.analyzeStackTrace && (
+							<Link onClick={props.analyzeClick}>Analyze with ChatGPT</Link>
+						)}
 					</Meta>
 					{props.post && (
 						<div style={{ marginBottom: "10px" }}>
@@ -1272,7 +1276,7 @@ const BaseCodeError = (props: BaseCodeErrorProps) => {
 			return (
 				<MetaSection>
 					<Meta id="stack-trace">
-						<MetaLabel>Stack Trace Two</MetaLabel>
+						<MetaLabel>Stack Trace</MetaLabel>
 						<TourTip title={props.stackTraceTip} placement="bottom">
 							<ClickLines id="stack-trace" className="code" tabIndex={0}>
 								{stackTraceText.split("\n").map((line: string, i) => {
@@ -1433,11 +1437,11 @@ const renderMetaSectionCollapsed = (props: BaseCodeErrorProps) => {
 	);
 };
 
-const ReplyInput = (props: { codeError: CSCodeError }) => {
+const ReplyInput = (props: { codeError: CSCodeError; analyzeStacktrace: boolean }) => {
 	const dispatch = useAppDispatch();
 	const [text, setText] = React.useState("");
 	const [attachments, setAttachments] = React.useState<AttachmentField[]>([]);
-	const [isLoading, setIsLoading] = React.useState(false);
+	const [isLoading, setIsLoading] = React.useState<"post" | "chat" | undefined>(undefined);
 	const teamMates = useSelector((state: CodeStreamState) => getTeamMates(state));
 
 	const getStackTraceText = (): string => {
@@ -1448,6 +1452,12 @@ const ReplyInput = (props: { codeError: CSCodeError }) => {
 		return error.text ?? "";
 	};
 
+	useEffect(() => {
+		if (props.analyzeStacktrace === true) {
+			submit("analyze");
+		}
+	}, [props.analyzeStacktrace]);
+
 	const submit = async (submitType: SubmitType = "normal") => {
 		// don't create empty replies
 		const theText = submitType === "analyze" ? getStackTraceText() : text;
@@ -1455,7 +1465,7 @@ const ReplyInput = (props: { codeError: CSCodeError }) => {
 
 		const isChat = submitType === "analyze" || submitType === "chat";
 
-		setIsLoading(true);
+		setIsLoading(isChat ? "chat" : "post");
 
 		const actualCodeError = (await dispatch(
 			upgradePendingCodeError(props.codeError.id, "Comment")
@@ -1480,7 +1490,7 @@ const ReplyInput = (props: { codeError: CSCodeError }) => {
 			)
 		);
 
-		setIsLoading(false);
+		setIsLoading(undefined);
 		setText("");
 		setAttachments([]);
 	};
@@ -1514,11 +1524,15 @@ const ReplyInput = (props: { codeError: CSCodeError }) => {
 						<Button
 							disabled={text.length === 0}
 							onClick={() => submit("chat")}
-							isLoading={isLoading}
+							isLoading={isLoading === "chat"}
 						>
 							Ask ChatGPT
 						</Button>
-						<Button disabled={text.length === 0} onClick={() => submit()} isLoading={isLoading}>
+						<Button
+							disabled={text.length === 0}
+							onClick={() => submit()}
+							isLoading={isLoading === "post"}
+						>
 							Comment
 						</Button>
 					</div>
@@ -1584,6 +1598,7 @@ const CodeErrorForCodeError = (props: PropsWithCodeError) => {
 	});
 	const [isEditing, setIsEditing] = React.useState(false);
 	const [shareModalOpen, setShareModalOpen] = React.useState(false);
+	const [isAnalyzeStackTrace, setAnalyzeStackTrace] = React.useState(false);
 
 	useDidMount(() => {
 		if (!props.collapsed) {
@@ -1593,6 +1608,10 @@ const CodeErrorForCodeError = (props: PropsWithCodeError) => {
 			});
 		}
 	});
+
+	const analyzeSubmit = (e: SyntheticEvent) => {
+		setAnalyzeStackTrace(true);
+	};
 
 	const renderFooter =
 		props.renderFooter ||
@@ -1615,7 +1634,7 @@ const CodeErrorForCodeError = (props: PropsWithCodeError) => {
 
 					{InputContainer && !derivedState.isPDIdev && (
 						<InputContainer>
-							<ReplyInput codeError={codeError} />
+							<ReplyInput analyzeStacktrace={isAnalyzeStackTrace} codeError={codeError} />
 						</InputContainer>
 					)}
 				</Footer>
@@ -1647,6 +1666,8 @@ const CodeErrorForCodeError = (props: PropsWithCodeError) => {
 			)}
 			<BaseCodeError
 				{...baseProps}
+				analyzeClick={analyzeSubmit}
+				analyzeStackTrace={isAnalyzeStackTrace}
 				parsedStack={props.parsedStack}
 				codeError={props.codeError}
 				post={derivedState.post}
