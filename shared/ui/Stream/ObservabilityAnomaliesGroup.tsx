@@ -17,10 +17,9 @@ interface Props {
 	observabilityAnomalies?: any;
 	observabilityRepo?: any;
 	entityGuid?: string;
+	title?: string;
 }
-
-//@TODO: Candidate for deletion, probably do not need
-export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Props) => {
+export const ObservabilityAnomaliesGroup = React.memo((props: Props) => {
 	const dispatch = useAppDispatch();
 	const derivedState = useAppSelector((state: CodeStreamState) => {
 		const clmSettings = state.preferences.clmSettings || {};
@@ -30,8 +29,8 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 	}, shallowEqual);
 	const [expanded, setExpanded] = useState<boolean>(true);
 	const [showMoreExpanded, setShowMoreExpanded] = useState<boolean>(false);
-	const primaryAnomalies = props.observabilityAnomalies?.slice(0, 4);
-	const secondaryAnomalies = props.observabilityAnomalies?.slice(4, 9);
+	const primaryAnomalies = props.observabilityAnomalies?.slice(0, 5);
+	const secondaryAnomalies = props.observabilityAnomalies?.slice(5, 10);
 
 	const getRoundedPercentageOutput = ratio => {
 		const percentage = (ratio - 1) * 100;
@@ -67,7 +66,7 @@ export const ObservabilityAnomaliesResponseTimeDropdown = React.memo((props: Pro
 			>
 				{expanded && <Icon name="chevron-down-thin" />}
 				{!expanded && <Icon name="chevron-right-thin" />}
-				<span style={{ marginLeft: "2px" }}>Response Time</span>
+				<span style={{ marginLeft: "2px" }}>{props.title}</span>
 			</Row>
 			{expanded && (
 				<>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { shallowEqual } from "react-redux";
 
@@ -13,6 +12,7 @@ interface Props {
 	entityGuid?: string;
 }
 
+//@TODO Candidate for deletion
 export const ObservabilityAnomaliesThroughputDropdown = React.memo((props: Props) => {
 	const dispatch = useAppDispatch();
 	const derivedState = useAppSelector((state: CodeStreamState) => {

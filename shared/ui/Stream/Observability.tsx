@@ -282,6 +282,7 @@ export const Observability = React.memo((props: Props) => {
 	const [observabilityErrorsError, setObservabilityErrorsError] = useState<string>();
 	const [observabilityRepos, setObservabilityRepos] = useState<ObservabilityRepo[]>([]);
 	const [loadingPane, setLoadingPane] = useState<string | undefined>();
+	const [calculatingAnomalies, setCalculatingAnomalies] = useState<boolean>(false);
 	const [entityGoldenMetrics, setEntityGoldenMetrics] = useState<EntityGoldenMetrics>();
 	const [entityGoldenMetricsErrors, setEntityGoldenMetricsErrors] = useState<string[]>([]);
 	const [serviceLevelObjectives, setServiceLevelObjectives] = useState<
@@ -639,8 +640,7 @@ export const Observability = React.memo((props: Props) => {
 	};
 
 	const fetchAnomalies = (entityGuid: string, repoId) => {
-		loading(repoId, true);
-		setLoadingPane(expandedEntity);
+		setCalculatingAnomalies(true);
 
 		HostApi.instance
 			.send(GetObservabilityAnomaliesRequestType, {
@@ -650,19 +650,12 @@ export const Observability = React.memo((props: Props) => {
 			})
 			.then(response => {
 				setObservabilityAnomalies(response);
-				// if (response?.repos) {
-				// 	const existingObservabilityErrors = observabilityErrors.filter(_ => _?.repoId !== repoId);
-				// 	existingObservabilityErrors.push(response.repos[0]);
-				// 	setObservabilityErrors(existingObservabilityErrors!);
-				// }
-				loading(repoId, false);
-				setLoadingPane(undefined);
+				setCalculatingAnomalies(false);
 				dispatch(setRefreshAnomalies(false));
 			})
 			.catch(_ => {
-				console.warn(_);
-				loading(repoId, false);
-				setLoadingPane(undefined);
+				console.error("Failed to fetch anomalies", _);
+				setCalculatingAnomalies(false);
 				dispatch(setRefreshAnomalies(false));
 			});
 	};
@@ -719,8 +712,10 @@ export const Observability = React.memo((props: Props) => {
 				entityGuid: entityGuid,
 			});
 
-			if (isNRErrorResponse(response.error)) {
-				setServiceLevelObjectiveError(response.error.error.message ?? response.error.error.type);
+			if (isNRErrorResponse(response?.error)) {
+				setServiceLevelObjectiveError(
+					response.error?.error?.message ?? response.error?.error?.type
+				);
 			} else {
 				setServiceLevelObjectiveError(undefined);
 			}
@@ -1226,6 +1221,7 @@ export const Observability = React.memo((props: Props) => {
 																								observabilityRepo={_observabilityRepo}
 																								entityGuid={ea.entityGuid}
 																								noAccess={noErrorsAccess}
+																								calculatingAnomalies={calculatingAnomalies}
 																							/>
 																						</>
 																					</>

@@ -12,11 +12,13 @@ interface Props {
 	entityGuid?: string;
 }
 
+//@TODO: Candidate for deletion, probably do not need
 export const ObservabilityAnomaliesErrorRateDropdown = React.memo((props: Props) => {
 	const dispatch = useAppDispatch();
 	const derivedState = useAppSelector((state: CodeStreamState) => {
+		const clmSettings = state.preferences.clmSettings || {};
 		return {
-			sessionStart: state.context.sessionStart,
+			clmSettings,
 		};
 	}, shallowEqual);
 

@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { Row } from "./CrossPostIssueControls/IssuesPane";
 import Icon from "./Icon";
 import { Link } from "./Link";
-import { ObservabilityAnomaliesErrorRateDropdown } from "./ObservabilityAnomaliesErrorRateDropdown";
-import { ObservabilityAnomaliesResponseTimeDropdown } from "./ObservabilityAnomaliesResponseTimeDropdown";
+import { ObservabilityAnomaliesGroup } from "./ObservabilityAnomaliesGroup";
 import { ErrorRow } from "@codestream/webview/Stream/Observability";
 import { useAppDispatch } from "../utilities/hooks";
 import { openModal } from "../store/context/actions";
@@ -16,6 +15,7 @@ interface Props {
 	// observabilityAssignments: any;
 	entityGuid: string;
 	noAccess?: string;
+	calculatingAnomalies?: boolean;
 }
 
 export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
@@ -58,7 +58,7 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 				</div>
 			</Row>
 
-			{expanded && props.observabilityAnomalies.error && (
+			{expanded && props.observabilityAnomalies.error && !props.calculatingAnomalies && (
 				<>
 					<ErrorRow
 						customPadding={"0 10px 0 50px"}
@@ -96,21 +96,28 @@ export const ObservabilityAnomaliesWrapper = React.memo((props: Props) => {
 					</Row>
 				) : (
 					<>
-						<ObservabilityAnomaliesResponseTimeDropdown
-							observabilityAnomalies={props.observabilityAnomalies.responseTime}
-							observabilityRepo={props.observabilityRepo}
-							entityGuid={props.entityGuid}
-						/>
-						{/*<ObservabilityAnomaliesThroughputDropdown*/}
-						{/*	observabilityAnomalies={props.observabilityAnomalies.throughput}*/}
-						{/*	observabilityRepo={props.observabilityRepo}*/}
-						{/*	entityGuid={props.entityGuid}*/}
-						{/*/>*/}
-						<ObservabilityAnomaliesErrorRateDropdown
-							observabilityAnomalies={props.observabilityAnomalies.errorRate}
-							observabilityRepo={props.observabilityRepo}
-							entityGuid={props.entityGuid}
-						/>
+						{props.calculatingAnomalies && (
+							<div style={{ margin: "0px 0px 4px 47px" }}>
+								<Icon className={"spin"} name="refresh" /> Calculating...
+							</div>
+						)}
+
+						{!props.calculatingAnomalies && (
+							<>
+								<ObservabilityAnomaliesGroup
+									observabilityAnomalies={props.observabilityAnomalies.responseTime}
+									observabilityRepo={props.observabilityRepo}
+									entityGuid={props.entityGuid}
+									title="Response Time"
+								/>
+								<ObservabilityAnomaliesGroup
+									observabilityAnomalies={props.observabilityAnomalies.errorRate}
+									observabilityRepo={props.observabilityRepo}
+									entityGuid={props.entityGuid}
+									title="Error Rate"
+								/>
+							</>
+						)}
 					</>
 				))}
 		</>
