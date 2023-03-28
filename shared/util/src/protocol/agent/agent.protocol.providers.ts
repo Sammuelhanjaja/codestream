@@ -1338,7 +1338,7 @@ export interface GetObservabilityErrorGroupMetadataResponse {
 
 export const GetObservabilityErrorGroupMetadataRequestType = new RequestType<
 	GetObservabilityErrorGroupMetadataRequest,
-	GetObservabilityErrorGroupMetadataResponse ,
+	GetObservabilityErrorGroupMetadataResponse,
 	void,
 	void
 >("codestream/newrelic/errorGroup/metadata");
