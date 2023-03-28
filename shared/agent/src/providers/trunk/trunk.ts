@@ -1,15 +1,25 @@
-import { CheckTrunkRequest, CheckTrunkRequestType, CheckTrunkResponse } from "@codestream/protocols/agent";
+import { CheckTrunkRequest, CheckTrunkRequestType, CheckTrunkResponse, ThirdPartyProviderConfig } from "@codestream/protocols/agent";
 import { log, lspHandler, lspProvider } from "../../system";
 import path from "path";
 import fs from "fs";
 import { ThirdPartyProviderBase } from "providers/thirdPartyProviderBase";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { CodeStreamSession } from "session";
+import { strict } from "assert";
 
 export const execAsync = promisify(exec);
 
 @lspProvider("trunk")
 export class TrunkProvider extends ThirdPartyProviderBase {
+
+	constructor(
+		public readonly session: CodeStreamSession,
+		protected readonly providerConfig: ThirdPartyProviderConfig
+	) {
+		super(session, providerConfig);
+	}
+
 	get headers(): { [key: string]: string; } {
 		throw new Error("Method not implemented.");
 	}
@@ -34,12 +44,14 @@ export class TrunkProvider extends ThirdPartyProviderBase {
 		return path.join(this.installPath, "codestream-state.json"); // non-default; trying to make sure we don't collide with any other files
 	}
 
-	@log()
 	@lspHandler(CheckTrunkRequestType)
+	@log()
 	async checkRepo(request: CheckTrunkRequest) : Promise<CheckTrunkResponse> {
 		try {
 			if(!fs.existsSync(this.installPath)){
-				await execAsync("curl https://get.trunk.io -fsSL | bash -s -- -y");
+				await execAsync(`sudo bash -c "mkdir -p /usr/local/bin"`);
+				await execAsync(`sudo bash -c "curl -fsSL https://trunk.io/releases/trunk -o ${this.installPath}"`);
+				await execAsync(`sudo bash -c "chmod -x ${this.installPath}"`);
 			}
 
 			if(!fs.existsSync(this.repoConfigurationFile)){
