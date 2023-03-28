@@ -53,7 +53,7 @@ export class TrunkProvider extends ThirdPartyProviderBase {
 			}
 
 			const output = fs.readFileSync(this.outputStateFile, "utf8");
-			const report = JSON.parse(output);  //type this
+			// const report = JSON.parse(output);  //type this
 
 			return {
 				response: output
