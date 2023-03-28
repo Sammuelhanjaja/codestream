@@ -1,31 +1,24 @@
-import { configureAndConnectProvider } from "@codestream/webview/store/providers/actions";
-import { useAppDispatch } from "@codestream/webview/utilities/hooks";
 import React from "react";
-import Icon from "../Icon";
-import { Provider } from "../IntegrationsPanel";
+import Button from "../Button";
+
+import {
+	CheckTrunkRequestType,
+} from "@codestream/protocols/agent";
+
+import { HostApi } from "../../webview-api";
 
 export const ConnectCICD = () => {
-	const dispatch = useAppDispatch();
+	const check = async() =>{
+		try {
+			const result = await HostApi.instance.send(CheckTrunkRequestType, { });
+		} catch (error) {
+			throw new Error(`exception thrown checking repo with Trunk: ${error.message}`);
+		}
+	}
+
 	return (
 		<>
-			<div className="filters" style={{ padding: "0 20px 10px 20px" }}>
-				<span>
-					Connect to CircleCI to see build status for the branch you&#8217;re currently checked out
-					to.
-				</span>
-			</div>
-
-			<div style={{ padding: "0 20px 20px 20px" }}>
-				<Provider
-					appendIcon
-					style={{ maxWidth: "23em" }}
-					key="circleci"
-					onClick={() => dispatch(configureAndConnectProvider("circleci*com", "CI/CD Section"))}
-				>
-					<Icon name="circleci" />
-					Connect to CircleCI
-				</Provider>
-			</div>
+			<Button onClick={() => check()}>Run Check</Button>
 		</>
 	);
 };
