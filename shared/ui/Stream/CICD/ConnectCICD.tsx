@@ -8,10 +8,17 @@ import {
 
 import { HostApi } from "../../webview-api";
 
-export const ConnectCICD = () => {
+interface Props {
+	currentRepo: ReposScm;
+}
+
+export const ConnectCICD = (props: Props) => {
 	const check = async() =>{
 		try {
-			const result = await HostApi.instance.send(CheckTrunkRequestType,{});
+			var path = props?.currentRepo?.path;
+			const result = await HostApi.instance.send(CheckTrunkRequestType, {
+				cwd: path
+			 });
 		} catch (error) {
 			throw new Error(`exception thrown checking repo with Trunk: ${error.message}`);
 		}

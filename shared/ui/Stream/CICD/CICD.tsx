@@ -202,7 +202,7 @@ export const CICD = (props: Props) => {
 			</PaneHeader>
 			{props.paneState != PaneState.Collapsed && (
 				<PaneBody key="ci-cd">
-					{!derivedState.bootstrapped && <ConnectCICD />}
+					{!derivedState.bootstrapped && <ConnectCICD currentRepo={derivedState.currentRepo} />}
 					{derivedState.bootstrapped && projects.circleci && (
 						<CircleCIBuilds projects={projects.circleci} />
 					)}

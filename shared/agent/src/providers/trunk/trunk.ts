@@ -32,39 +32,55 @@ export class TrunkProvider extends ThirdPartyProviderBase {
 		return "trunk";
 	}
 	
-	get installPath() {
-		return "/usr/local/bin/trunk"; // default install location
-	}
-
-	get repoConfigurationFile() {
-		return path.join(".trunk", "trunk.yaml"); // default configuration file
-	}
-
-	get outputStateFile() {
-		return path.join(this.installPath, "codestream-state.json"); // non-default; trying to make sure we don't collide with any other files
-	}
-
 	@lspHandler(CheckTrunkRequestType)
 	@log()
 	async checkRepo(request: CheckTrunkRequest) : Promise<CheckTrunkResponse> {
 		try {
-			if(!fs.existsSync(this.installPath)){
-				await execAsync(`sudo bash -c "mkdir -p /usr/local/bin"`);
-				await execAsync(`sudo bash -c "curl -fsSL https://trunk.io/releases/trunk -o ${this.installPath}"`);
-				await execAsync(`sudo bash -c "chmod -x ${this.installPath}"`);
+			// fully qualified paths
+			const fullyQualifiedTrunkPath = path.join(request.cwd, ".trunk");
+			const fullyQualifiedExecutable = path.join(fullyQualifiedTrunkPath, "bin", "trunk");
+			const fullyQualifiedTrunkConfigurationFile = path.join(fullyQualifiedTrunkPath, "trunk.yaml");
+			const fullyQualifiedOutputStateFile = path.join(fullyQualifiedTrunkPath, "codestream-state.json");
+
+			// relative to repo root
+			const relativeBinPath = path.join(".trunk", "bin");
+			const relativeExecutable = path.join(relativeBinPath, "trunk");
+			const relativeOutputStateFile = path.join(".trunk", "codestream-state.json");
+
+			if(!fs.existsSync(fullyQualifiedExecutable)){
+				await execAsync(`bash -c "mkdir -p ${relativeBinPath}"`, {
+					cwd: request.cwd
+				});
+				await execAsync(`bash -c "curl -fsSL https://trunk.io/releases/trunk -o ${relativeExecutable}"`, {
+					cwd: request.cwd
+				});
+				await execAsync(`bash -c "chmod u+x ${relativeExecutable}"`, {
+					cwd: request.cwd
+				});
+			}
+			
+			if(!fs.existsSync(fullyQualifiedTrunkConfigurationFile)){
+				await execAsync(`${relativeExecutable} init -n --no-progress`, {
+					cwd: request.cwd
+				});
 			}
 
-			if(!fs.existsSync(this.repoConfigurationFile)){
-				await execAsync("trunk init -n --no-progress > /dev/null ");
+			if(!fs.existsSync(fullyQualifiedOutputStateFile)){
+				try{
+					await execAsync(`${relativeExecutable} check --all --no-fix --output-file="${relativeOutputStateFile}" --no-progress`, {
+						cwd: request.cwd
+					});
+				}
+				catch(error){
+					// it bombs, but still works?
+				}
 			}
 
-			await execAsync(`trunk check --all --no-fix --output-file="${this.outputStateFile}" --no-progress > /dev/null`);
-
-			if(!fs.existsSync(this.outputStateFile)){
+			if(!fs.existsSync(fullyQualifiedOutputStateFile)){
 				throw Error("Output State File Not Found");
 			}
 
-			const output = fs.readFileSync(this.outputStateFile, "utf8");
+			const output = fs.readFileSync(fullyQualifiedOutputStateFile, "utf8");
 			// const report = JSON.parse(output);  //type this
 
 			return {

@@ -2063,7 +2063,9 @@ export const GetLibraryDetailsType = new RequestType<
 	void
 >("codestream/newrelic/libraryDetails");
 
-export interface CheckTrunkRequest { }
+export interface CheckTrunkRequest { 
+	cwd: string
+}
 
 export interface CheckTrunkResponse { 
 	response: string
