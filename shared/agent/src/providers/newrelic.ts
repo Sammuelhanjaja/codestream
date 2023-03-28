@@ -59,9 +59,9 @@ import {
 	GetObservabilityErrorAssignmentsRequest,
 	GetObservabilityErrorAssignmentsRequestType,
 	GetObservabilityErrorAssignmentsResponse,
-	GetObservabilityErrorGroupMetadataRequest,
+	DownloadTrunkRequest,
 	GetObservabilityErrorGroupMetadataRequestType,
-	GetObservabilityErrorGroupMetadataResponse,
+	DownloadTrunkResponse,
 	GetObservabilityErrorsRequest,
 	GetObservabilityErrorsRequestType,
 	GetObservabilityErrorsResponse,
@@ -614,8 +614,8 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 		timed: true,
 	})
 	async getErrorGroupMetadata(
-		request: GetObservabilityErrorGroupMetadataRequest
-	): Promise<GetObservabilityErrorGroupMetadataResponse | undefined> {
+		request: DownloadTrunkRequest
+	): Promise<DownloadTrunkResponse | undefined> {
 		if (!request.errorGroupGuid) return undefined;
 
 		try {
@@ -627,7 +627,7 @@ export class NewRelicProvider extends ThirdPartyIssueProviderBase<CSNewRelicProv
 				entityId: metricResponse?.entityGuid,
 				occurrenceId: metricResponse?.traceId,
 				relatedRepos: mappedRepoEntities || [],
-			} as GetObservabilityErrorGroupMetadataResponse;
+			} as DownloadTrunkResponse;
 		} catch (ex) {
 			ContextLogger.error(ex, "getErrorGroupMetadata", {
 				request: request,

@@ -1325,11 +1325,11 @@ export const GetObservabilityErrorAssignmentsRequestType = new RequestType<
 	void
 >("codestream/newrelic/assignments");
 
-export interface DownloadTrunkRequest {
+export interface GetObservabilityErrorGroupMetadataRequest  {
 	errorGroupGuid: string;
 }
 
-export interface DownloadTrunkResponse {
+export interface GetObservabilityErrorGroupMetadataResponse  {
 	occurrenceId?: string;
 	entityId?: string;
 	remote?: string;
@@ -1337,8 +1337,8 @@ export interface DownloadTrunkResponse {
 }
 
 export const GetObservabilityErrorGroupMetadataRequestType = new RequestType<
-	DownloadTrunkRequest,
-	DownloadTrunkResponse,
+	GetObservabilityErrorGroupMetadataRequest,
+	GetObservabilityErrorGroupMetadataResponse ,
 	void,
 	void
 >("codestream/newrelic/errorGroup/metadata");

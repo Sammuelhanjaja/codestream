@@ -22,7 +22,7 @@
 		"bundle": "npm install --no-save && npm run webview:verify && npm run agent:bundle && tsx esbuild.ts --prod",
 		"clean:ci": "git clean -xdf -e vs/licenses/**/* && npm run webview:clean:ci && npm run agent:clean:ci",
 		"preinstall": "pushd \"../shared/ui\" && npm install --no-save && popd && pushd \"../shared/util\" && npm install --no-save && popd && pushd \"../shared/build\" && npm install --no-save && popd",
-		"rebuild": "npm install --no-save && npm run agent:rebuild && npm run build",
+		"rebuild": "npm install --no-save && npm run agent:rebuild",
 		"verify:lint": "npx eslint  src/CodeStream.VisualStudio.Shared/UI/WebViews/**/*.ts *.js *.ts",
 		"verify:prettier": "prettier --check src/CodeStream.VisualStudio.Shared/UI/WebViews/** docs/** *.ts *.js *.md package.json .prettierrc",
 		"watch": "tsx esbuild.ts --watch",
